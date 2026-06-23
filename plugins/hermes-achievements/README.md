@@ -61,14 +61,14 @@ Version `0.2.x` expands the catalog to 60+ achievements, including model/provide
 Clone into your Hermes plugins directory:
 
 ```bash
-git clone https://github.com/PCinkusz/hermes-achievements ~/.hermes/plugins/hermes-achievements
+git clone https://github.com/PCinkusz/hermes-achievements ~/.devascent/plugins/hermes-achievements
 ```
 
 For local development, keep the repo elsewhere and symlink it:
 
 ```bash
 git clone https://github.com/PCinkusz/hermes-achievements ~/hermes-achievements
-ln -s ~/hermes-achievements ~/.hermes/plugins/hermes-achievements
+ln -s ~/hermes-achievements ~/.devascent/plugins/hermes-achievements
 ```
 
 Then rescan dashboard plugins:
@@ -86,12 +86,12 @@ bundled with Hermes.
 If you installed with git:
 
 ```bash
-cd ~/.hermes/plugins/hermes-achievements
+cd ~/.devascent/plugins/hermes-achievements
 git pull --ff-only
 curl http://127.0.0.1:9119/api/dashboard/plugins/rescan
 ```
 
-For a user-installed plugin at `~/.hermes/plugins/hermes-achievements`, a plugin
+For a user-installed plugin at `~/.devascent/plugins/hermes-achievements`, a plugin
 rescan is enough because Python backend routes are not auto-imported. If you
 update the bundled plugin by pulling changes in the hermes-agent repository, and
 that bundled plugin update changes backend routes or `plugin_api.py`, restart

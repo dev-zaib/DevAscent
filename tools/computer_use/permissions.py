@@ -39,11 +39,11 @@ def _driver_cmd(override: Optional[str]) -> str:
     if override:
         return override
     try:
-        from hermes_cli.tools_config import _cua_driver_cmd
+        from devascent_cli.tools_config import _cua_driver_cmd
 
         return _cua_driver_cmd()
     except Exception:
-        return os.environ.get("HERMES_CUA_DRIVER_CMD", "").strip() or "cua-driver"
+        return os.environ.get("DEVASCENT_CUA_DRIVER_CMD", "").strip() or "cua-driver"
 
 
 def _child_env() -> Dict[str, str]:

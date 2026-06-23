@@ -1,11 +1,11 @@
 """Tests for PluginContext.register_tts_provider() (issue #30398).
 
 Exercises the plugin context hook end-to-end: drops a fake plugin into
-``$HERMES_HOME/plugins/``, runs ``PluginManager().discover_and_load()``,
+``$DEVASCENT_HOME/plugins/``, runs ``PluginManager().discover_and_load()``,
 and asserts the registration result.
 
 Mirrors the structure of
-``tests/hermes_cli/test_plugin_scanner_recursion.py::TestRegisterImageGenProvider``.
+``tests/devascent_cli/test_plugin_scanner_recursion.py::TestRegisterImageGenProvider``.
 """
 
 from __future__ import annotations
@@ -59,12 +59,12 @@ class TestRegisterTTSProvider:
     """End-to-end: a fake plugin registers via the hook, ends up in the registry."""
 
     def test_accepts_valid_provider(self):
-        from hermes_cli.plugins import PluginManager
+        from devascent_cli.plugins import PluginManager
 
         from agent import tts_registry
         tts_registry._reset_for_tests()
 
-        hermes_home = Path(os.environ["HERMES_HOME"])
+        hermes_home = Path(os.environ["DEVASCENT_HOME"])
         _write_plugin(
             hermes_home / "plugins",
             "my-tts-plugin",
@@ -92,12 +92,12 @@ class TestRegisterTTSProvider:
 
     def test_rejects_non_provider(self, caplog):
         """A plugin that passes a non-TTSProvider gets a warning, no exception."""
-        from hermes_cli.plugins import PluginManager
+        from devascent_cli.plugins import PluginManager
 
         from agent import tts_registry
         tts_registry._reset_for_tests()
 
-        hermes_home = Path(os.environ["HERMES_HOME"])
+        hermes_home = Path(os.environ["DEVASCENT_HOME"])
         _write_plugin(
             hermes_home / "plugins",
             "bad-tts-plugin",
@@ -122,12 +122,12 @@ class TestRegisterTTSProvider:
         rejected by the underlying registry — both with a registry-level warning
         AND with the registry remaining empty (plugin still loads OK).
         """
-        from hermes_cli.plugins import PluginManager
+        from devascent_cli.plugins import PluginManager
 
         from agent import tts_registry
         tts_registry._reset_for_tests()
 
-        hermes_home = Path(os.environ["HERMES_HOME"])
+        hermes_home = Path(os.environ["DEVASCENT_HOME"])
         _write_plugin(
             hermes_home / "plugins",
             "shadow-tts-plugin",

@@ -61,7 +61,7 @@ Field notes:
 | Network failure, no cache | Silent fallback to in-repo snapshot |
 | Manifest fails schema validation | Treated as unreachable |
 
-Cache location: `~/.hermes/cache/model_catalog.json`.
+Cache location: `~/.devascent/cache/model_catalog.json`.
 
 ## Config
 
@@ -94,7 +94,7 @@ Maintainers:
 
 ```bash
 # Re-generate from the in-repo hardcoded lists (keeps manifest in sync after
-# editing OPENROUTER_MODELS or _PROVIDER_MODELS["nous"] in hermes_cli/models.py).
+# editing OPENROUTER_MODELS or _PROVIDER_MODELS["nous"] in devascent_cli/models.py).
 python scripts/build_model_catalog.py
 ```
 

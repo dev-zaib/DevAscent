@@ -374,7 +374,7 @@ def compress_context(
     # Probe whether the lock subsystem is actually available on this
     # SessionDB instance.  A process running mismatched module versions
     # (e.g. ``conversation_compression.py`` reloaded after a pull but the
-    # long-lived ``hermes_state.SessionDB`` class still bound to the
+    # long-lived ``devascent_state.SessionDB`` class still bound to the
     # pre-#34351 version in memory) has the call site but not the method.
     # In that case ``try_acquire_compression_lock`` raises AttributeError —
     # NOT a ``sqlite3.Error`` — so the method's own fail-open guard never
@@ -575,18 +575,18 @@ def compress_context(
 
                     set_current_session_id(agent.session_id)
                 except Exception:
-                    os.environ["HERMES_SESSION_ID"] = agent.session_id
+                    os.environ["DEVASCENT_SESSION_ID"] = agent.session_id
                 # The gateway/tools session context (ContextVar + env) and the
                 # logging session context are SEPARATE mechanisms. The call above
                 # moves the former; the ``[session_id]`` tag on log lines comes
-                # from ``hermes_logging._session_context`` (set once per turn in
+                # from ``devascent_logging._session_context`` (set once per turn in
                 # conversation_loop.py). Without this, post-rotation log lines in
                 # the same turn keep the STALE old id while the message/DB/gateway
                 # state carry the new one — breaking log correlation exactly at the
                 # compaction boundary (see #34089). Guarded separately so a logging
                 # failure can never regress the routing update above.
                 try:
-                    from hermes_logging import set_session_context
+                    from devascent_logging import set_session_context
 
                     set_session_context(agent.session_id)
                 except Exception:
@@ -595,7 +595,7 @@ def compress_context(
                 try:
                     agent._session_db.create_session(
                         session_id=agent.session_id,
-                        source=agent.platform or os.environ.get("HERMES_SESSION_SOURCE", "cli"),
+                        source=agent.platform or os.environ.get("DEVASCENT_SESSION_SOURCE", "cli"),
                         model=agent.model,
                         model_config=agent._session_init_model_config,
                         parent_session_id=old_session_id,
@@ -620,9 +620,9 @@ def compress_context(
                         from gateway.session_context import set_current_session_id
                         set_current_session_id(agent.session_id)
                     except Exception:
-                        os.environ["HERMES_SESSION_ID"] = agent.session_id
+                        os.environ["DEVASCENT_SESSION_ID"] = agent.session_id
                     try:
-                        from hermes_logging import set_session_context
+                        from devascent_logging import set_session_context
                         set_session_context(agent.session_id)
                     except Exception:
                         pass
@@ -644,7 +644,7 @@ def compress_context(
                 # per-session lookup with no parent walk, so without this an
                 # active goal silently dies at the boundary (#33618).
                 try:
-                    from hermes_cli.goals import migrate_goal_to_session
+                    from devascent_cli.goals import migrate_goal_to_session
                     migrate_goal_to_session(old_session_id, agent.session_id, reason="compression")
                 except Exception as _goal_err:
                     logger.debug("Could not migrate goal on compression: %s", _goal_err)

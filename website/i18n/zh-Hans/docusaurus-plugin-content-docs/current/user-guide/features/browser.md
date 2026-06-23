@@ -42,7 +42,7 @@ Hermes Agent 内置完整的浏览器自动化工具集，支持多种后端选�
 要使用 Browserbase 托管的云端浏览器，请添加：
 
 ```bash
-# Add to ~/.hermes/.env
+# Add to ~/.devascent/.env
 BROWSERBASE_API_KEY=***
 BROWSERBASE_PROJECT_ID=your-project-id-here
 ```
@@ -54,7 +54,7 @@ BROWSERBASE_PROJECT_ID=your-project-id-here
 要使用 Browser Use 作为云端浏览器提供商，请添加：
 
 ```bash
-# Add to ~/.hermes/.env
+# Add to ~/.devascent/.env
 BROWSER_USE_API_KEY=***
 ```
 
@@ -65,7 +65,7 @@ BROWSER_USE_API_KEY=***
 要使用 Firecrawl 作为云端浏览器提供商，请添加：
 
 ```bash
-# Add to ~/.hermes/.env
+# Add to ~/.devascent/.env
 FIRECRAWL_API_KEY=fc-***
 ```
 
@@ -95,7 +95,7 @@ FIRECRAWL_BROWSER_TTL=600
 该功能**默认开启**。如需禁用（所有 URL 均走已配置的云端提供商，与之前行为一致）：
 
 ```yaml
-# ~/.hermes/config.yaml
+# ~/.devascent/config.yaml
 browser:
   cloud_provider: browserbase
   auto_local_for_private_urls: false
@@ -164,7 +164,7 @@ make down
 # then run the custom docker run command above
 ```
 
-然后在 `~/.hermes/.env` 中设置：
+然后在 `~/.devascent/.env` 中设置：
 
 ```bash
 CAMOFOX_URL=http://localhost:9377
@@ -176,7 +176,7 @@ CAMOFOX_URL=http://localhost:9377
 
 #### 持久化浏览器会话
 
-默认情况下，每个 Camofox 会话使用随机身份 — Cookie 和登录状态不会在 Agent 重启后保留。要启用持久化浏览器会话，请在 `~/.hermes/config.yaml` 中添加：
+默认情况下，每个 Camofox 会话使用随机身份 — Cookie 和登录状态不会在 Agent 重启后保留。要启用持久化浏览器会话，请在 `~/.devascent/config.yaml` 中添加：
 
 ```yaml
 browser:
@@ -218,7 +218,7 @@ managed_persistence: true
 
 ##### 状态存储位置
 
-Hermes 从 profile 范围目录 `~/.hermes/browser_auth/camofox/`（非默认 profile 则在 `$HERMES_HOME` 下的对应位置）派生稳定的 `userId`。实际浏览器 profile 数据存储在 Camofox 服务器端，以该 `userId` 为键。要完全重置持久化 profile，请在 Camofox 服务器端清除对应数据，并删除相应 Hermes profile 的状态目录。
+Hermes 从 profile 范围目录 `~/.devascent/browser_auth/camofox/`（非默认 profile 则在 `$DEVASCENT_HOME` 下的对应位置）派生稳定的 `userId`。实际浏览器 profile 数据存储在 Camofox 服务器端，以该 `userId` 为键。要完全重置持久化 profile，请在 Camofox 服务器端清除对应数据，并删除相应 Hermes profile 的状态目录。
 
 #### 外部管理的 Camofox 会话
 
@@ -296,28 +296,28 @@ CAMOFOX_ADOPT_EXISTING_TAB=true
 # Linux — Brave
 brave-browser \
   --remote-debugging-port=9222 \
-  --user-data-dir=$HOME/.hermes/chrome-debug \
+  --user-data-dir=$HOME/.devascent/chrome-debug \
   --no-first-run \
   --no-default-browser-check &
 
 # Linux — Google Chrome
 google-chrome \
   --remote-debugging-port=9222 \
-  --user-data-dir=$HOME/.hermes/chrome-debug \
+  --user-data-dir=$HOME/.devascent/chrome-debug \
   --no-first-run \
   --no-default-browser-check &
 
 # macOS — Brave
 "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser" \
   --remote-debugging-port=9222 \
-  --user-data-dir="$HOME/.hermes/chrome-debug" \
+  --user-data-dir="$HOME/.devascent/chrome-debug" \
   --no-first-run \
   --no-default-browser-check &
 
 # macOS — Google Chrome
 "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
   --remote-debugging-port=9222 \
-  --user-data-dir="$HOME/.hermes/chrome-debug" \
+  --user-data-dir="$HOME/.devascent/chrome-debug" \
   --no-first-run \
   --no-default-browser-check &
 ```
@@ -463,7 +463,7 @@ Press Enter to submit the form
 What does the chart on this page show?
 ```
 
-截图存储在 `~/.hermes/cache/screenshots/`，24 小时后自动清理。
+截图存储在 `~/.devascent/cache/screenshots/`，24 小时后自动清理。
 
 ### `browser_console`
 
@@ -593,7 +593,7 @@ browser:
   record_sessions: true  # default: false
 ```
 
-启用后，录制在首次 `browser_navigate` 时自动开始，会话关闭时保存到 `~/.hermes/browser_recordings/`。本地模式和云端模式（Browserbase）均支持。超过 72 小时的录制文件自动清理。
+启用后，录制在首次 `browser_navigate` 时自动开始，会话关闭时保存到 `~/.devascent/browser_recordings/`。本地模式和云端模式（Browserbase）均支持。超过 72 小时的录制文件自动清理。
 
 ## 隐身功能
 

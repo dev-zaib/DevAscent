@@ -41,7 +41,7 @@ hermes chat
 
 ## 配置
 
-运行 `hermes model` 后，你的 `~/.hermes/config.yaml` 将包含以下内容：
+运行 `hermes model` 后，你的 `~/.devascent/config.yaml` 将包含以下内容：
 
 ```yaml
 model:

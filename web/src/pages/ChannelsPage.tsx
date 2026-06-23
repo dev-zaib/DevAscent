@@ -104,7 +104,7 @@ function isTerminalTelegramOnboardingError(error: unknown): boolean {
 
 export default function ChannelsPage() {
   const [platforms, setPlatforms] = useState<MessagingPlatform[]>([]);
-  const [envPath, setEnvPath] = useState("~/.hermes/.env");
+  const [envPath, setEnvPath] = useState("~/.devascent/.env");
   const [gatewayStartCommand, setGatewayStartCommand] = useState(
     "hermes gateway start",
   );
@@ -136,7 +136,7 @@ export default function ChannelsPage() {
       .getMessagingPlatforms()
       .then((res) => {
         setPlatforms(res.platforms);
-        setEnvPath(res.env_path || "~/.hermes/.env");
+        setEnvPath(res.env_path || "~/.devascent/.env");
         setGatewayStartCommand(res.gateway_start_command || "hermes gateway start");
       })
       .catch((e) => showToast(`Error: ${e}`, "error"));

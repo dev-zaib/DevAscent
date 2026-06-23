@@ -61,7 +61,7 @@ https://hermes-agent.nousresearch.com/docs/api/model-catalog.json
 | 网络故障且无缓存 | 静默回退到仓库内置快照 |
 | 清单未通过 schema 校验 | 视为不可达 |
 
-缓存位置：`~/.hermes/cache/model_catalog.json`。
+缓存位置：`~/.devascent/cache/model_catalog.json`。
 
 ## 配置
 
@@ -93,7 +93,7 @@ model_catalog:
 维护者操作：
 
 ```bash
-# 从仓库内硬编码列表重新生成（在编辑 hermes_cli/models.py 中的
+# 从仓库内硬编码列表重新生成（在编辑 devascent_cli/models.py 中的
 # OPENROUTER_MODELS 或 _PROVIDER_MODELS["nous"] 后保持清单同步）。
 python scripts/build_model_catalog.py
 ```

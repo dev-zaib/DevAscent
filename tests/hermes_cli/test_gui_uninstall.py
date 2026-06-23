@@ -1,4 +1,4 @@
-"""Tests for hermes_cli.gui_uninstall — GUI-only uninstall + install discovery.
+"""Tests for devascent_cli.gui_uninstall — GUI-only uninstall + install discovery.
 
 Covers the cross-platform artifact discovery, the agent/GUI detection the
 desktop UI gates options on, and that ``uninstall_gui`` removes only GUI
@@ -11,26 +11,26 @@ from pathlib import Path
 
 import pytest
 
-import hermes_cli.gui_uninstall as gu
+import devascent_cli.gui_uninstall as gu
 
 
 def _make_agent(hermes_home: Path) -> Path:
     """Create a fake agent install: source package + venv."""
-    agent_root = hermes_home / "hermes-agent"
-    (agent_root / "hermes_cli").mkdir(parents=True)
-    (agent_root / "hermes_cli" / "__init__.py").write_text("")
+    agent_root = hermes_home / "devascent"
+    (agent_root / "devascent_cli").mkdir(parents=True)
+    (agent_root / "devascent_cli" / "__init__.py").write_text("")
     (agent_root / "venv" / "bin").mkdir(parents=True)
     return agent_root
 
 
 def _make_gui_build(hermes_home: Path) -> None:
     """Create the source-built GUI artifacts a `hermes desktop` run produces."""
-    desktop = hermes_home / "hermes-agent" / "apps" / "desktop"
+    desktop = hermes_home / "devascent" / "apps" / "desktop"
     (desktop / "dist").mkdir(parents=True)
     (desktop / "dist" / "index.html").write_text("<html>")
     (desktop / "release" / "linux-unpacked").mkdir(parents=True)
     (desktop / "node_modules").mkdir(parents=True)
-    (hermes_home / "hermes-agent" / "node_modules").mkdir(parents=True)
+    (hermes_home / "devascent" / "node_modules").mkdir(parents=True)
     (hermes_home / "desktop-build-stamp.json").write_text("{}")
 
 
@@ -51,7 +51,7 @@ def test_agent_is_installed_detects_source_and_venv(tmp_path):
 def test_agent_is_installed_venv_only(tmp_path):
     """A checkout with only a venv (no package dir yet) still counts."""
     hermes_home = tmp_path / ".hermes"
-    (hermes_home / "hermes-agent" / "venv").mkdir(parents=True)
+    (hermes_home / "devascent" / "venv").mkdir(parents=True)
     assert gu.agent_is_installed(hermes_home) is True
 
 
@@ -108,7 +108,7 @@ def test_uninstall_gui_removes_only_gui_artifacts(tmp_path, monkeypatch):
     assert "dist" in removed_names
 
     # Agent + user data preserved.
-    assert (agent_root / "hermes_cli" / "__init__.py").exists()
+    assert (agent_root / "devascent_cli" / "__init__.py").exists()
     assert (agent_root / "venv").exists()
     assert (hermes_home / "config.yaml").exists()
     assert (hermes_home / ".env").exists()
@@ -223,13 +223,13 @@ def test_run_uninstall_yes_keep_data_is_non_interactive(tmp_path, monkeypatch):
 
     We DO NOT spawn the real CLI here (its project_root removal would delete the
     test checkout) — we call run_uninstall in-process against a throwaway
-    HERMES_HOME with all the destructive externals stubbed out.
+    DEVASCENT_HOME with all the destructive externals stubbed out.
     """
-    import hermes_cli.uninstall as uninstall
+    import devascent_cli.uninstall as uninstall
 
     hermes_home = tmp_path / ".hermes"
-    agent_root = hermes_home / "hermes-agent"
-    (agent_root / "hermes_cli").mkdir(parents=True)
+    agent_root = hermes_home / "devascent"
+    (agent_root / "devascent_cli").mkdir(parents=True)
     (hermes_home / "config.yaml").write_text("x: 1\n")
     desktop = agent_root / "apps" / "desktop"
     (desktop / "release").mkdir(parents=True)
@@ -239,7 +239,7 @@ def test_run_uninstall_yes_keep_data_is_non_interactive(tmp_path, monkeypatch):
 
     # Stub every destructive external so the test only exercises the control
     # flow + the real GUI sweep (which is safe inside tmp_path).
-    monkeypatch.setattr(uninstall, "get_hermes_home", lambda: hermes_home)
+    monkeypatch.setattr(uninstall, "get_devascent_home", lambda: hermes_home)
     monkeypatch.setattr(uninstall, "get_project_root", lambda: fake_code)
     monkeypatch.setattr(uninstall, "uninstall_gateway_service", lambda: False)
     monkeypatch.setattr(uninstall, "remove_path_from_shell_configs", lambda: [])
@@ -249,7 +249,7 @@ def test_run_uninstall_yes_keep_data_is_non_interactive(tmp_path, monkeypatch):
     # Make input() blow up so a regression that reaches a prompt fails loudly.
     monkeypatch.setattr("builtins.input", lambda *a, **k: pytest.fail("prompted in --yes mode"))
 
-    from hermes_cli import gui_uninstall as gu_mod
+    from devascent_cli import gui_uninstall as gu_mod
     monkeypatch.setattr(gu_mod, "packaged_gui_app_paths", lambda: [])
     monkeypatch.setattr(gu_mod, "desktop_userdata_dir", lambda: tmp_path / "none")
 
@@ -264,16 +264,16 @@ def test_run_uninstall_yes_keep_data_is_non_interactive(tmp_path, monkeypatch):
 
 
 def test_run_uninstall_yes_full_wipes_home(tmp_path, monkeypatch):
-    """``--yes --full`` removes the whole HERMES_HOME non-interactively."""
-    import hermes_cli.uninstall as uninstall
+    """``--yes --full`` removes the whole DEVASCENT_HOME non-interactively."""
+    import devascent_cli.uninstall as uninstall
 
     hermes_home = tmp_path / ".hermes"
-    (hermes_home / "hermes-agent" / "hermes_cli").mkdir(parents=True)
+    (hermes_home / "devascent" / "devascent_cli").mkdir(parents=True)
     (hermes_home / "config.yaml").write_text("x: 1\n")
     fake_code = tmp_path / "checkout"
     fake_code.mkdir()
 
-    monkeypatch.setattr(uninstall, "get_hermes_home", lambda: hermes_home)
+    monkeypatch.setattr(uninstall, "get_devascent_home", lambda: hermes_home)
     monkeypatch.setattr(uninstall, "get_project_root", lambda: fake_code)
     monkeypatch.setattr(uninstall, "uninstall_gateway_service", lambda: False)
     monkeypatch.setattr(uninstall, "remove_path_from_shell_configs", lambda: [])
@@ -282,7 +282,7 @@ def test_run_uninstall_yes_full_wipes_home(tmp_path, monkeypatch):
     monkeypatch.setattr(uninstall, "_discover_named_profiles", lambda: [])
     monkeypatch.setattr("builtins.input", lambda *a, **k: pytest.fail("prompted in --yes mode"))
 
-    from hermes_cli import gui_uninstall as gu_mod
+    from devascent_cli import gui_uninstall as gu_mod
     monkeypatch.setattr(gu_mod, "packaged_gui_app_paths", lambda: [])
     monkeypatch.setattr(gu_mod, "desktop_userdata_dir", lambda: tmp_path / "none")
 
@@ -292,27 +292,27 @@ def test_run_uninstall_yes_full_wipes_home(tmp_path, monkeypatch):
 
 
 def test_uninstall_module_main_gui_mode(tmp_path, monkeypatch):
-    """`python -m hermes_cli.uninstall --mode gui` runs the GUI-only path.
+    """`python -m devascent_cli.uninstall --mode gui` runs the GUI-only path.
 
     This is the lightweight, venv-independent entrypoint the desktop launches
     with a system Python (so lite/full don't rmtree their own running venv on
     Windows). Verify it dispatches by mode without prompting.
     """
-    import hermes_cli.uninstall as uninstall
+    import devascent_cli.uninstall as uninstall
 
     hermes_home = tmp_path / ".hermes"
-    agent_root = hermes_home / "hermes-agent"
-    (agent_root / "hermes_cli").mkdir(parents=True)
+    agent_root = hermes_home / "devascent"
+    (agent_root / "devascent_cli").mkdir(parents=True)
     desktop = agent_root / "apps" / "desktop"
     (desktop / "release").mkdir(parents=True)
     (hermes_home / "desktop-build-stamp.json").write_text("{}")
     (hermes_home / "config.yaml").write_text("x: 1\n")
 
-    monkeypatch.setattr(uninstall, "get_hermes_home", lambda: hermes_home)
-    from hermes_cli import gui_uninstall as gu_mod
+    monkeypatch.setattr(uninstall, "get_devascent_home", lambda: hermes_home)
+    from devascent_cli import gui_uninstall as gu_mod
     monkeypatch.setattr(gu_mod, "packaged_gui_app_paths", lambda: [])
     monkeypatch.setattr(gu_mod, "desktop_userdata_dir", lambda: tmp_path / "none")
-    monkeypatch.setattr(gu_mod, "get_hermes_home", lambda: hermes_home)
+    monkeypatch.setattr(gu_mod, "get_devascent_home", lambda: hermes_home)
     monkeypatch.setattr("builtins.input", lambda *a, **k: pytest.fail("prompted in module main"))
 
     rc = uninstall.main(["--mode", "gui"])
@@ -320,13 +320,13 @@ def test_uninstall_module_main_gui_mode(tmp_path, monkeypatch):
     # GUI swept, agent + config kept (gui-only contract).
     assert not (desktop / "release").exists()
     assert not (hermes_home / "desktop-build-stamp.json").exists()
-    assert (agent_root / "hermes_cli").exists()
+    assert (agent_root / "devascent_cli").exists()
     assert (hermes_home / "config.yaml").exists()
 
 
 def test_uninstall_module_main_rejects_bad_mode():
     """An invalid --mode exits non-zero (argparse), never silently full-wipes."""
-    import hermes_cli.uninstall as uninstall
+    import devascent_cli.uninstall as uninstall
 
     with pytest.raises(SystemExit) as exc:
         uninstall.main(["--mode", "nuke"])
@@ -335,7 +335,7 @@ def test_uninstall_module_main_rejects_bad_mode():
 
 def test_uninstall_args_namespace_mode_mapping():
     """_UninstallArgs maps mode → the gui/full flags run_uninstall reads."""
-    import hermes_cli.uninstall as uninstall
+    import devascent_cli.uninstall as uninstall
 
     gui = uninstall._UninstallArgs(mode="gui")
     assert gui.gui is True and gui.full is False and gui.yes is True

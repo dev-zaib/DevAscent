@@ -250,10 +250,10 @@ def _allow_lazy_installs() -> bool:
     refusing to install would lock people out of their own backends; the
     decision to block is an explicit user opt-in.
     """
-    if os.environ.get("HERMES_DISABLE_LAZY_INSTALLS") == "1":
+    if os.environ.get("DEVASCENT_DISABLE_LAZY_INSTALLS") == "1":
         return False
     try:
-        from hermes_cli.config import load_config
+        from devascent_cli.config import load_config
         cfg = load_config()
     except Exception:
         return True
@@ -364,7 +364,7 @@ def _is_present(spec: str) -> bool:
 def _venv_pip_install(specs: tuple[str, ...], *, timeout: int = 300) -> _InstallResult:
     """Install ``specs`` into the active venv using uv → pip → ensurepip ladder.
 
-    Mirrors the strategy in ``hermes_cli.tools_config._pip_install`` but
+    Mirrors the strategy in ``devascent_cli.tools_config._pip_install`` but
     kept independent here so this module has no CLI dependency.
     """
     if not specs:

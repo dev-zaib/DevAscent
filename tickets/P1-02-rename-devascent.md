@@ -11,9 +11,9 @@ Rebrand the fork from Hermes Agent to DevAscent. Rename all user-facing and inte
 ## AC
 - [ ] Python package renamed: `import hermes_xxx` → `import devascent_xxx`
 - [ ] CLI command: `hermes` → `devascent` (for remaining CLI subcommands we keep)
-- [ ] Config directory: `~/.hermes` → `~/.devascent`
-- [ ] Env vars: `HERMES_*` → `DEVASCENT_*`
-- [ ] Python module names: `hermes_state.py` → `devascent_state.py`, etc.
+- [ ] Config directory: `~/.devascent` → `~/.devascent`
+- [ ] Env vars: `DEVASCENT_*` → `DEVASCENT_*`
+- [ ] Python module names: `devascent_state.py` → `devascent_state.py`, etc.
 - [ ] `pyproject.toml`: name, version, description, scripts updated
 - [ ] `package.json`: name, description, repo URLs updated
 - [ ] `docker-compose.yml`: service names, image names updated
@@ -27,33 +27,33 @@ Rebrand the fork from Hermes Agent to DevAscent. Rename all user-facing and inte
 ### Core files (top-level)
 ```
 hermes → devascent
-hermes_bootstrap.py → devascent_bootstrap.py
-hermes_constants.py → devascent_constants.py
-hermes_state.py → devascent_state.py
-hermes_logging.py → devascent_logging.py
-hermes_time.py → devascent_time.py
-hermes_cli/ → devascent_cli/
-setup-hermes.sh → setup-devascent.sh
+devascent_bootstrap.py → devascent_bootstrap.py
+devascent_constants.py → devascent_constants.py
+devascent_state.py → devascent_state.py
+devascent_logging.py → devascent_logging.py
+devascent_time.py → devascent_time.py
+devascent_cli/ → devascent_cli/
+setup-devascent.sh → setup-devascent.sh
 ```
 
 ### Python imports (find & replace)
 ```
-from hermes_constants import → from devascent_constants import
-from hermes_state import → from devascent_state import
-import hermes_constants → import devascent_constants
+from devascent_constants import → from devascent_constants import
+from devascent_state import → from devascent_state import
+import devascent_constants → import devascent_constants
 ```
 
 ### Env vars
 ```
-HERMES_HOME → DEVASCENT_HOME
-HERMES_* → DEVASCENT_* (all platform/feature env vars)
+DEVASCENT_HOME → DEVASCENT_HOME
+DEVASCENT_* → DEVASCENT_* (all platform/feature env vars)
 ```
 
 ### Config
 ```
-~/.hermes/config.yaml → ~/.devascent/config.yaml
-~/.hermes/.env → ~/.devascent/.env
-~/.hermes/logs/ → ~/.devascent/logs/
+~/.devascent/config.yaml → ~/.devascent/config.yaml
+~/.devascent/.env → ~/.devascent/.env
+~/.devascent/logs/ → ~/.devascent/logs/
 ```
 
 ### pyproject.toml
@@ -74,7 +74,7 @@ scripts:
 ### Docker
 ```
 hermes-agent → devascent
-~/.hermes:/opt/data → ~/.devascent:/opt/data
+~/.devascent:/opt/data → ~/.devascent:/opt/data
 ```
 
 ## Approach

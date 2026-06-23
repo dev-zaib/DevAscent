@@ -118,6 +118,6 @@ async def get_db() -> AsyncSession:
 
 ## Hermes Convention Checks
 - [x] Use `get_devascent_home()` not `Path.home() / ".devascent"` (profile-safe)
-- [x] No HERMES_ env vars in new code — use DEVASCENT_ prefix
+- [x] No DEVASCENT_ env vars in new code — use DEVASCENT_ prefix
 - [x] Secrets in `.env`, behavioral settings will go in `config.yaml` later
 - [x] Module follows plugin pattern: self-contained, no core modifications

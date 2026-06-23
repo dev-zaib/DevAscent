@@ -17,18 +17,18 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from hermes_cli import main as cli_main
+from devascent_cli import main as cli_main
 
 
-# Tests in this module either exercise the REAL _detect_concurrent_hermes_instances
-# helper (and need the autouse stub in tests/hermes_cli/conftest.py disabled),
+# Tests in this module either exercise the REAL _detect_concurrent_devascent_instances
+# helper (and need the autouse stub in tests/devascent_cli/conftest.py disabled),
 # or supply their own explicit return value via patch.object. Mark the whole
 # module so the conftest fixture skips its default stub.
 pytestmark = pytest.mark.real_concurrent_gate
 
 
 # ---------------------------------------------------------------------------
-# _detect_concurrent_hermes_instances
+# _detect_concurrent_devascent_instances
 # ---------------------------------------------------------------------------
 
 
@@ -47,7 +47,7 @@ def test_detect_concurrent_returns_empty_when_no_other_processes(_winp, tmp_path
 
     fake_psutil = types.SimpleNamespace(process_iter=lambda attrs: iter([]))
     with patch.dict(sys.modules, {"psutil": fake_psutil}):
-        result = cli_main._detect_concurrent_hermes_instances(scripts_dir)
+        result = cli_main._detect_concurrent_devascent_instances(scripts_dir)
 
     assert result == []
 
@@ -62,7 +62,7 @@ def test_detect_concurrent_excludes_self_pid(_winp, tmp_path):
     procs = [_make_proc(my_pid, str(shim), "hermes.exe")]
     fake_psutil = types.SimpleNamespace(process_iter=lambda attrs: iter(procs))
     with patch.dict(sys.modules, {"psutil": fake_psutil}):
-        result = cli_main._detect_concurrent_hermes_instances(scripts_dir)
+        result = cli_main._detect_concurrent_devascent_instances(scripts_dir)
 
     assert result == []
 
@@ -80,7 +80,7 @@ def test_detect_concurrent_finds_other_hermes_process(_winp, tmp_path):
     ]
     fake_psutil = types.SimpleNamespace(process_iter=lambda attrs: iter(procs))
     with patch.dict(sys.modules, {"psutil": fake_psutil}):
-        result = cli_main._detect_concurrent_hermes_instances(scripts_dir)
+        result = cli_main._detect_concurrent_devascent_instances(scripts_dir)
 
     assert result == [(other_pid, "hermes.exe")]
 
@@ -96,7 +96,7 @@ def test_detect_concurrent_matches_case_insensitively(_winp, tmp_path):
     procs = [_make_proc(9999, upper, "HERMES.EXE")]
     fake_psutil = types.SimpleNamespace(process_iter=lambda attrs: iter(procs))
     with patch.dict(sys.modules, {"psutil": fake_psutil}):
-        result = cli_main._detect_concurrent_hermes_instances(scripts_dir)
+        result = cli_main._detect_concurrent_devascent_instances(scripts_dir)
 
     assert result == [(9999, "HERMES.EXE")]
 
@@ -108,7 +108,7 @@ def test_detect_concurrent_no_psutil_returns_empty(_winp, tmp_path):
 
     # Block psutil import — simulate environment without it.
     with patch.dict(sys.modules, {"psutil": None}):
-        result = cli_main._detect_concurrent_hermes_instances(scripts_dir)
+        result = cli_main._detect_concurrent_devascent_instances(scripts_dir)
 
     assert result == []
 
@@ -116,7 +116,7 @@ def test_detect_concurrent_no_psutil_returns_empty(_winp, tmp_path):
 @patch.object(cli_main, "_is_windows", return_value=False)
 def test_detect_concurrent_is_noop_off_windows(_winp, tmp_path):
     """No process enumeration off-Windows; the file-lock issue is Windows-only."""
-    assert cli_main._detect_concurrent_hermes_instances(tmp_path) == []
+    assert cli_main._detect_concurrent_devascent_instances(tmp_path) == []
 
 
 # ---------------------------------------------------------------------------
@@ -196,7 +196,7 @@ def test_detect_concurrent_excludes_parent_chain(_winp, tmp_path):
         ancestor_exe=str(shim),
     )
     with patch.dict(sys.modules, {"psutil": fake_psutil}):
-        result = cli_main._detect_concurrent_hermes_instances(scripts_dir)
+        result = cli_main._detect_concurrent_devascent_instances(scripts_dir)
 
     # Both self AND the launcher are excluded; no false positive.
     assert result == []
@@ -223,7 +223,7 @@ def test_detect_concurrent_still_finds_unrelated_other_hermes(_winp, tmp_path):
         ancestor_exe=str(shim),
     )
     with patch.dict(sys.modules, {"psutil": fake_psutil}):
-        result = cli_main._detect_concurrent_hermes_instances(scripts_dir)
+        result = cli_main._detect_concurrent_devascent_instances(scripts_dir)
 
     assert result == [(sibling_pid, "hermes.exe")]
 
@@ -251,7 +251,7 @@ def test_detect_concurrent_parent_chain_walks_deep(_winp, tmp_path):
         ancestor_exe=str(shim),
     )
     with patch.dict(sys.modules, {"psutil": fake_psutil}):
-        result = cli_main._detect_concurrent_hermes_instances(scripts_dir)
+        result = cli_main._detect_concurrent_devascent_instances(scripts_dir)
 
     assert result == []
 
@@ -285,7 +285,7 @@ def test_detect_concurrent_parents_call_robust_to_one_bad_hop(_winp, tmp_path):
         ancestor_exe=None,
     )
     with patch.dict(sys.modules, {"psutil": fake_psutil}):
-        result = cli_main._detect_concurrent_hermes_instances(scripts_dir)
+        result = cli_main._detect_concurrent_devascent_instances(scripts_dir)
 
     # No crash; helper completes. (Degenerate stub: launcher exe unreadable.)
     assert result == [(launcher_pid, "hermes.exe")]
@@ -312,7 +312,7 @@ def test_detect_concurrent_parent_walk_handles_stub_without_process(_winp, tmp_p
     # SimpleNamespace with ONLY process_iter — no Process / NoSuchProcess.
     fake_psutil = types.SimpleNamespace(process_iter=lambda attrs: iter(rows))
     with patch.dict(sys.modules, {"psutil": fake_psutil}):
-        result = cli_main._detect_concurrent_hermes_instances(scripts_dir)
+        result = cli_main._detect_concurrent_devascent_instances(scripts_dir)
 
     # Parent-walk silently failed; self still excluded; other still reported.
     assert result == [(other_pid, "hermes.exe")]
@@ -460,7 +460,7 @@ def test_pause_windows_gateways_for_update_stops_profile_and_unmapped_pids(
     capsys,
 ):
     import gateway.status as status_mod
-    import hermes_cli.gateway as gateway_mod
+    import devascent_cli.gateway as gateway_mod
 
     profile_home = tmp_path / "profiles" / "work"
     profile_home.mkdir(parents=True)
@@ -483,7 +483,7 @@ def test_pause_windows_gateways_for_update_stops_profile_and_unmapped_pids(
     monkeypatch.setattr(
         gateway_mod,
         "_capture_gateway_argv",
-        lambda pid: ["pythonw.exe", "-m", "hermes_cli.main", "gateway", "run"]
+        lambda pid: ["pythonw.exe", "-m", "devascent_cli.main", "gateway", "run"]
         if pid == 202
         else None,
     )
@@ -504,7 +504,7 @@ def test_pause_windows_gateways_for_update_stops_profile_and_unmapped_pids(
         "unmapped": [
             {
                 "pid": 202,
-                "argv": ["pythonw.exe", "-m", "hermes_cli.main", "gateway", "run"],
+                "argv": ["pythonw.exe", "-m", "devascent_cli.main", "gateway", "run"],
             }
         ],
     }
@@ -529,7 +529,7 @@ def test_resume_windows_gateways_after_update_relaunches_paused_profiles(
     monkeypatch,
     capsys,
 ):
-    import hermes_cli.gateway as gateway_mod
+    import devascent_cli.gateway as gateway_mod
 
     relaunched = []
     monkeypatch.setattr(
@@ -562,7 +562,7 @@ def test_resume_windows_gateways_after_update_respawns_unmapped_by_cmdline(
 ):
     """Unmapped gateways (no profile→PID-file mapping, e.g. a Scheduled Task)
     are respawned by replaying the argv snapshotted before the force-kill."""
-    import hermes_cli.gateway as gateway_mod
+    import devascent_cli.gateway as gateway_mod
 
     by_cmdline = []
     monkeypatch.setattr(
@@ -576,7 +576,7 @@ def test_resume_windows_gateways_after_update_respawns_unmapped_by_cmdline(
         lambda profile, old_pid: True,
     )
 
-    scheduled_argv = ["pythonw.exe", "-m", "hermes_cli.main", "gateway", "run"]
+    scheduled_argv = ["pythonw.exe", "-m", "devascent_cli.main", "gateway", "run"]
     token = {
         "resume_needed": True,
         "profiles": {},
@@ -609,8 +609,8 @@ def test_pause_returns_cold_start_token_when_installed_but_none_running(
     is an explicit "I want a gateway" signal. The pause step must return a
     token that tells resume to cold-start one.
     """
-    import hermes_cli.gateway as gateway_mod
-    from hermes_cli import gateway_windows
+    import devascent_cli.gateway as gateway_mod
+    from devascent_cli import gateway_windows
 
     monkeypatch.setattr(gateway_mod, "find_gateway_pids", lambda **_k: [])
     monkeypatch.setattr(gateway_windows, "is_installed", lambda: True)
@@ -636,8 +636,8 @@ def test_pause_returns_none_when_nothing_running_and_not_installed(
     Users who deliberately run without a gateway must not get one forced on
     them by an update.
     """
-    import hermes_cli.gateway as gateway_mod
-    from hermes_cli import gateway_windows
+    import devascent_cli.gateway as gateway_mod
+    from devascent_cli import gateway_windows
 
     monkeypatch.setattr(gateway_mod, "find_gateway_pids", lambda **_k: [])
     monkeypatch.setattr(gateway_windows, "is_installed", lambda: False)
@@ -652,8 +652,8 @@ def test_resume_cold_starts_gateway_when_token_requests_it(
     capsys,
 ):
     """cold_start_if_installed token + nothing running → fresh detached spawn."""
-    import hermes_cli.gateway as gateway_mod
-    from hermes_cli import gateway_windows
+    import devascent_cli.gateway as gateway_mod
+    from devascent_cli import gateway_windows
 
     monkeypatch.setattr(gateway_mod, "find_gateway_pids", lambda **_k: [])
     spawned = []
@@ -686,8 +686,8 @@ def test_resume_cold_start_skips_when_gateway_already_running(
 ):
     """Don't double-start: if a gateway came up between pause and resume
     (e.g. the autostart entry fired), the cold-start must no-op."""
-    import hermes_cli.gateway as gateway_mod
-    from hermes_cli import gateway_windows
+    import devascent_cli.gateway as gateway_mod
+    from devascent_cli import gateway_windows
 
     monkeypatch.setattr(gateway_mod, "find_gateway_pids", lambda **_k: [9001])
     spawned = []
@@ -736,7 +736,7 @@ def test_cmd_update_aborts_on_concurrent_instance(_winp, tmp_path, capsys):
         cli_main, "_venv_scripts_dir", return_value=scripts_dir
     ), patch.object(
         cli_main,
-        "_detect_concurrent_hermes_instances",
+        "_detect_concurrent_devascent_instances",
         return_value=[(4242, "hermes.exe")],
     ), patch.object(
         cli_main, "_run_pre_update_backup"
@@ -782,7 +782,7 @@ def test_cmd_update_force_bypasses_concurrent_check(_winp, tmp_path):
     with patch.object(
         cli_main, "_venv_scripts_dir", return_value=scripts_dir
     ), patch.object(
-        cli_main, "_detect_concurrent_hermes_instances", detect
+        cli_main, "_detect_concurrent_devascent_instances", detect
     ), patch.object(
         cli_main, "_run_pre_update_backup", side_effect=sentinel
     ), patch.object(

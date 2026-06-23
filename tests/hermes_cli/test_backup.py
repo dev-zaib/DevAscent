@@ -16,11 +16,11 @@ import pytest
 # ---------------------------------------------------------------------------
 
 def _make_hermes_tree(root: Path) -> None:
-    """Create a realistic ~/.hermes directory structure for testing."""
+    """Create a realistic ~/.devascent directory structure for testing."""
     (root / "config.yaml").write_text("model:\n  provider: openrouter\n")
     (root / ".env").write_text("OPENROUTER_API_KEY=sk-test-123\n")
     (root / "memory_store.db").write_bytes(b"fake-sqlite")
-    (root / "hermes_state.db").write_bytes(b"fake-state")
+    (root / "devascent_state.db").write_bytes(b"fake-state")
 
     # Sessions
     (root / "sessions").mkdir(exist_ok=True)
@@ -50,10 +50,10 @@ def _make_hermes_tree(root: Path) -> None:
     (root / "profiles" / "coder" / ".env").write_text("ANTHROPIC_API_KEY=sk-ant-123\n")
 
     # hermes-agent repo (should be EXCLUDED)
-    (root / "hermes-agent").mkdir(exist_ok=True)
-    (root / "hermes-agent" / "run_agent.py").write_text("# big file\n")
-    (root / "hermes-agent" / ".git").mkdir()
-    (root / "hermes-agent" / ".git" / "HEAD").write_text("ref: refs/heads/main\n")
+    (root / "devascent").mkdir(exist_ok=True)
+    (root / "devascent" / "run_agent.py").write_text("# big file\n")
+    (root / "devascent" / ".git").mkdir()
+    (root / "devascent" / ".git" / "HEAD").write_text("ref: refs/heads/main\n")
 
     # __pycache__ (should be EXCLUDED)
     (root / "plugins").mkdir(exist_ok=True)
@@ -81,40 +81,40 @@ def _symlink_file_or_skip(link: Path, target: Path) -> None:
 
 class TestShouldExclude:
     def test_excludes_hermes_agent(self):
-        from hermes_cli.backup import _should_exclude
+        from devascent_cli.backup import _should_exclude
         assert _should_exclude(Path("hermes-agent/run_agent.py"))
         assert _should_exclude(Path("hermes-agent/.git/HEAD"))
 
     def test_excludes_pycache(self):
-        from hermes_cli.backup import _should_exclude
+        from devascent_cli.backup import _should_exclude
         assert _should_exclude(Path("plugins/__pycache__/mod.cpython-312.pyc"))
 
     def test_excludes_pyc_files(self):
-        from hermes_cli.backup import _should_exclude
+        from devascent_cli.backup import _should_exclude
         assert _should_exclude(Path("some/module.pyc"))
 
     def test_excludes_pid_files(self):
-        from hermes_cli.backup import _should_exclude
+        from devascent_cli.backup import _should_exclude
         assert _should_exclude(Path("gateway.pid"))
         assert _should_exclude(Path("cron.pid"))
 
     def test_excludes_checkpoints(self):
         """checkpoints/ is session-local trajectory cache — hash-keyed,
         regenerated per-session, won't port to another machine anyway."""
-        from hermes_cli.backup import _should_exclude
+        from devascent_cli.backup import _should_exclude
         assert _should_exclude(Path("checkpoints/abc123/trajectory.json"))
         assert _should_exclude(Path("checkpoints/deadbeef/step_0001.json"))
 
     def test_excludes_backups_dir(self):
         """backups/ is excluded so pre-update backups don't nest exponentially."""
-        from hermes_cli.backup import _should_exclude
+        from devascent_cli.backup import _should_exclude
         assert _should_exclude(Path("backups/pre-update-2026-04-27-063400.zip"))
 
     def test_excludes_sqlite_sidecars(self):
         """SQLite WAL/SHM/journal sidecars must not ship alongside the
         safe-copied .db — pairing a fresh snapshot with stale sidecar state
         produces a torn restore."""
-        from hermes_cli.backup import _should_exclude
+        from devascent_cli.backup import _should_exclude
         assert _should_exclude(Path("state.db-wal"))
         assert _should_exclude(Path("state.db-shm"))
         assert _should_exclude(Path("state.db-journal"))
@@ -123,33 +123,33 @@ class TestShouldExclude:
         assert not _should_exclude(Path("state.db"))
 
     def test_includes_config(self):
-        from hermes_cli.backup import _should_exclude
+        from devascent_cli.backup import _should_exclude
         assert not _should_exclude(Path("config.yaml"))
 
     def test_includes_env(self):
-        from hermes_cli.backup import _should_exclude
+        from devascent_cli.backup import _should_exclude
         assert not _should_exclude(Path(".env"))
 
     def test_includes_skills(self):
-        from hermes_cli.backup import _should_exclude
+        from devascent_cli.backup import _should_exclude
         assert not _should_exclude(Path("skills/my-skill/SKILL.md"))
 
     def test_includes_profiles(self):
-        from hermes_cli.backup import _should_exclude
+        from devascent_cli.backup import _should_exclude
         assert not _should_exclude(Path("profiles/coder/config.yaml"))
 
     def test_includes_sessions(self):
-        from hermes_cli.backup import _should_exclude
+        from devascent_cli.backup import _should_exclude
         assert not _should_exclude(Path("sessions/abc.json"))
 
     def test_includes_logs(self):
-        from hermes_cli.backup import _should_exclude
+        from devascent_cli.backup import _should_exclude
         assert not _should_exclude(Path("logs/agent.log"))
 
     def test_includes_nested_hermes_agent_in_skills(self):
         """skills/autonomous-ai-agents/hermes-agent/ must NOT be excluded —
         only the root-level hermes-agent/ repo is skipped."""
-        from hermes_cli.backup import _should_exclude
+        from devascent_cli.backup import _should_exclude
         assert not _should_exclude(Path("skills/autonomous-ai-agents/hermes-agent/SKILL.md"))
         assert not _should_exclude(Path("skills/autonomous-ai-agents/hermes-agent/sub/item.txt"))
 
@@ -169,20 +169,20 @@ class TestShouldExclude:
         ],
     )
     def test_excludes_regeneratable_dependency_and_cache_dirs(self, rel):
-        """Python dep trees and tool caches under HERMES_HOME must be skipped —
+        """Python dep trees and tool caches under DEVASCENT_HOME must be skipped —
         these are what balloon a backup to hundreds of thousands of files."""
-        from hermes_cli.backup import _should_exclude
+        from devascent_cli.backup import _should_exclude
         assert _should_exclude(Path(rel))
 
     def test_does_not_exclude_curator_archive(self):
         """skills/.archive/ holds restorable archived skills and MUST survive
         a backup — it is intentionally NOT in the exclusion set."""
-        from hermes_cli.backup import _should_exclude
+        from devascent_cli.backup import _should_exclude
         assert not _should_exclude(Path("skills/.archive/old-skill/SKILL.md"))
 
     def test_does_not_exclude_legit_files_resembling_cache_names(self):
         """Only directory-component matches are excluded; a normal file is kept."""
-        from hermes_cli.backup import _should_exclude
+        from devascent_cli.backup import _should_exclude
         assert not _should_exclude(Path("skills/my-skill/venv-notes.md"))
         assert not _should_exclude(Path("memories/cache.json"))
 
@@ -197,14 +197,14 @@ class TestBackup:
         hermes_home.mkdir()
         _make_hermes_tree(hermes_home)
 
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
         # get_default_hermes_root needs this
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         out_zip = tmp_path / "backup.zip"
         args = Namespace(output=str(out_zip))
 
-        from hermes_cli.backup import run_backup
+        from devascent_cli.backup import run_backup
         run_backup(args)
 
         assert out_zip.exists()
@@ -233,7 +233,7 @@ class TestBackup:
         hermes_home.mkdir()
         _make_hermes_tree(hermes_home)
 
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         out_dir = tmp_path / "external-drive"
@@ -241,7 +241,7 @@ class TestBackup:
         out_zip = out_dir / "backup.zip"
         args = Namespace(output=str(out_zip))
 
-        import hermes_cli.backup as backup_mod
+        import devascent_cli.backup as backup_mod
         staged_dirs = []
         real_ntf = backup_mod.tempfile.NamedTemporaryFile
 
@@ -264,13 +264,13 @@ class TestBackup:
         hermes_home.mkdir()
         _make_hermes_tree(hermes_home)
 
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         out_zip = hermes_home / "backups" / "pre-update-test.zip"
         out_zip.parent.mkdir(parents=True, exist_ok=True)
 
-        import hermes_cli.backup as backup_mod
+        import devascent_cli.backup as backup_mod
         staged_dirs = []
         real_ntf = backup_mod.tempfile.NamedTemporaryFile
 
@@ -291,22 +291,22 @@ class TestBackup:
         hermes_home.mkdir()
         _make_hermes_tree(hermes_home)
 
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         out_zip = tmp_path / "backup.zip"
         args = Namespace(output=str(out_zip))
 
-        from hermes_cli.backup import run_backup
+        from devascent_cli.backup import run_backup
         run_backup(args)
 
         with zipfile.ZipFile(out_zip, "r") as zf:
             names = zf.namelist()
-            agent_files = [n for n in names if "hermes-agent" in n]
+            agent_files = [n for n in names if "devascent" in n]
             assert agent_files == [], f"hermes-agent files leaked into backup: {agent_files}"
 
     def test_excludes_dependency_and_cache_trees(self, tmp_path, monkeypatch):
-        """A plugin venv / site-packages / pip cache under HERMES_HOME must be
+        """A plugin venv / site-packages / pip cache under DEVASCENT_HOME must be
         pruned by the walk, while real data (skills, config) is preserved.
         This is the regression guard for the ballooning-backup bug."""
         hermes_home = tmp_path / ".hermes"
@@ -321,11 +321,11 @@ class TestBackup:
         pip_cache.mkdir(parents=True)
         (pip_cache / "abc.whl").write_bytes(b"\x00")
 
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         out_zip = tmp_path / "backup.zip"
-        from hermes_cli.backup import run_backup
+        from devascent_cli.backup import run_backup
         run_backup(Namespace(output=str(out_zip)))
 
         with zipfile.ZipFile(out_zip, "r") as zf:
@@ -343,19 +343,19 @@ class TestBackup:
         _make_hermes_tree(hermes_home)
 
         # Add a nested hermes-agent directory inside skills (like the real layout)
-        nested = hermes_home / "skills" / "autonomous-ai-agents" / "hermes-agent"
+        nested = hermes_home / "skills" / "autonomous-ai-agents" / "devascent"
         nested.mkdir(parents=True)
         (nested / "SKILL.md").write_text("# Hermes Agent Skill\n")
         (nested / "sub").mkdir()
         (nested / "sub" / "item.txt").write_text("nested content\n")
 
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         out_zip = tmp_path / "backup.zip"
         args = Namespace(output=str(out_zip))
 
-        from hermes_cli.backup import run_backup
+        from devascent_cli.backup import run_backup
         run_backup(args)
 
         with zipfile.ZipFile(out_zip, "r") as zf:
@@ -373,13 +373,13 @@ class TestBackup:
         hermes_home.mkdir()
         _make_hermes_tree(hermes_home)
 
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         out_zip = tmp_path / "backup.zip"
         args = Namespace(output=str(out_zip))
 
-        from hermes_cli.backup import run_backup
+        from devascent_cli.backup import run_backup
         run_backup(args)
 
         with zipfile.ZipFile(out_zip, "r") as zf:
@@ -393,13 +393,13 @@ class TestBackup:
         hermes_home.mkdir()
         _make_hermes_tree(hermes_home)
 
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         out_zip = tmp_path / "backup.zip"
         args = Namespace(output=str(out_zip))
 
-        from hermes_cli.backup import run_backup
+        from devascent_cli.backup import run_backup
         run_backup(args)
 
         with zipfile.ZipFile(out_zip, "r") as zf:
@@ -413,12 +413,12 @@ class TestBackup:
         hermes_home.mkdir()
         (hermes_home / "config.yaml").write_text("model: test\n")
 
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         args = Namespace(output=None)
 
-        from hermes_cli.backup import run_backup
+        from devascent_cli.backup import run_backup
         run_backup(args)
 
         # Should exist in home dir
@@ -426,7 +426,7 @@ class TestBackup:
         assert len(zips) == 1
 
     def test_skips_symlinked_files(self, tmp_path, monkeypatch):
-        """Backup must not dereference symlinks and leak files outside HERMES_HOME."""
+        """Backup must not dereference symlinks and leak files outside DEVASCENT_HOME."""
         hermes_home = tmp_path / ".hermes"
         hermes_home.mkdir()
         _make_hermes_tree(hermes_home)
@@ -434,13 +434,13 @@ class TestBackup:
         outside.write_text("outside secret\n")
         _symlink_file_or_skip(hermes_home / "skills" / "outside-link.txt", outside)
 
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         out_zip = tmp_path / "backup.zip"
         args = Namespace(output=str(out_zip))
 
-        from hermes_cli.backup import run_backup
+        from devascent_cli.backup import run_backup
         run_backup(args)
 
         with zipfile.ZipFile(out_zip, "r") as zf:
@@ -461,7 +461,7 @@ class TestValidateBackupZip:
 
     def test_state_db_passes(self, tmp_path):
         """A zip containing state.db is accepted as a valid Hermes backup."""
-        from hermes_cli.backup import _validate_backup_zip
+        from devascent_cli.backup import _validate_backup_zip
         zip_path = tmp_path / "backup.zip"
         self._make_zip(zip_path, ["state.db", "sessions/abc.json"])
         with zipfile.ZipFile(zip_path, "r") as zf:
@@ -469,17 +469,17 @@ class TestValidateBackupZip:
         assert ok, reason
 
     def test_old_wrong_db_name_fails(self, tmp_path):
-        """A zip with only hermes_state.db (old wrong name) is rejected."""
-        from hermes_cli.backup import _validate_backup_zip
+        """A zip with only devascent_state.db (old wrong name) is rejected."""
+        from devascent_cli.backup import _validate_backup_zip
         zip_path = tmp_path / "old.zip"
-        self._make_zip(zip_path, ["hermes_state.db", "memory_store.db"])
+        self._make_zip(zip_path, ["devascent_state.db", "memory_store.db"])
         with zipfile.ZipFile(zip_path, "r") as zf:
             ok, reason = _validate_backup_zip(zf)
         assert not ok
 
     def test_config_yaml_passes(self, tmp_path):
         """A zip containing config.yaml is accepted (existing behaviour preserved)."""
-        from hermes_cli.backup import _validate_backup_zip
+        from devascent_cli.backup import _validate_backup_zip
         zip_path = tmp_path / "backup.zip"
         self._make_zip(zip_path, ["config.yaml", "skills/x/SKILL.md"])
         with zipfile.ZipFile(zip_path, "r") as zf:
@@ -505,7 +505,7 @@ class TestImport:
         """Import extracts files into hermes home."""
         hermes_home = tmp_path / ".hermes"
         hermes_home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         zip_path = tmp_path / "backup.zip"
@@ -518,7 +518,7 @@ class TestImport:
 
         args = Namespace(zipfile=str(zip_path), force=True)
 
-        from hermes_cli.backup import run_import
+        from devascent_cli.backup import run_import
         run_import(args)
 
         assert (hermes_home / "config.yaml").read_text() == "model:\n  provider: openrouter\n"
@@ -530,7 +530,7 @@ class TestImport:
         """Import strips .hermes/ prefix if all entries share it."""
         hermes_home = tmp_path / ".hermes"
         hermes_home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         zip_path = tmp_path / "backup.zip"
@@ -541,7 +541,7 @@ class TestImport:
 
         args = Namespace(zipfile=str(zip_path), force=True)
 
-        from hermes_cli.backup import run_import
+        from devascent_cli.backup import run_import
         run_import(args)
 
         assert (hermes_home / "config.yaml").read_text() == "model: test\n"
@@ -551,7 +551,7 @@ class TestImport:
         """Import rejects an empty zip."""
         hermes_home = tmp_path / ".hermes"
         hermes_home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         zip_path = tmp_path / "empty.zip"
@@ -560,7 +560,7 @@ class TestImport:
 
         args = Namespace(zipfile=str(zip_path), force=True)
 
-        from hermes_cli.backup import run_import
+        from devascent_cli.backup import run_import
         with pytest.raises(SystemExit):
             run_import(args)
 
@@ -568,7 +568,7 @@ class TestImport:
         """Import rejects a zip that doesn't look like a hermes backup."""
         hermes_home = tmp_path / ".hermes"
         hermes_home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         zip_path = tmp_path / "random.zip"
@@ -579,7 +579,7 @@ class TestImport:
 
         args = Namespace(zipfile=str(zip_path), force=True)
 
-        from hermes_cli.backup import run_import
+        from devascent_cli.backup import run_import
         with pytest.raises(SystemExit):
             run_import(args)
 
@@ -587,7 +587,7 @@ class TestImport:
         """Import blocks zip entries with path traversal."""
         hermes_home = tmp_path / ".hermes"
         hermes_home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         zip_path = tmp_path / "evil.zip"
@@ -599,7 +599,7 @@ class TestImport:
 
         args = Namespace(zipfile=str(zip_path), force=True)
 
-        from hermes_cli.backup import run_import
+        from devascent_cli.backup import run_import
         run_import(args)
 
         # config.yaml should be restored
@@ -617,7 +617,7 @@ class TestImport:
         """
         hermes_home = tmp_path / ".hermes"
         hermes_home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         # The target (e.g. hosted container) already has its own live state.
@@ -633,7 +633,7 @@ class TestImport:
 
         args = Namespace(zipfile=str(zip_path), force=True)
 
-        from hermes_cli.backup import run_import
+        from devascent_cli.backup import run_import
         run_import(args)
 
         # config.yaml is restored normally...
@@ -646,7 +646,7 @@ class TestImport:
         target has none — a foreign state must never seed the reconciler."""
         hermes_home = tmp_path / ".hermes"
         hermes_home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         zip_path = tmp_path / "backup.zip"
@@ -657,7 +657,7 @@ class TestImport:
 
         args = Namespace(zipfile=str(zip_path), force=True)
 
-        from hermes_cli.backup import run_import
+        from devascent_cli.backup import run_import
         run_import(args)
 
         assert (hermes_home / "config.yaml").exists()
@@ -669,7 +669,7 @@ class TestImport:
         the same way the root profile's is."""
         hermes_home = tmp_path / ".hermes"
         (hermes_home / "profiles" / "coder").mkdir(parents=True)
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         live_state = '{"gateway_state": "running"}'
@@ -684,7 +684,7 @@ class TestImport:
 
         args = Namespace(zipfile=str(zip_path), force=True)
 
-        from hermes_cli.backup import run_import
+        from devascent_cli.backup import run_import
         run_import(args)
 
         # Profile config is restored, but its live gateway state is preserved.
@@ -699,7 +699,7 @@ class TestImport:
         written over the target's."""
         hermes_home = tmp_path / ".hermes"
         hermes_home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         # Live runtime files belonging to the target's own processes.
@@ -717,7 +717,7 @@ class TestImport:
 
         args = Namespace(zipfile=str(zip_path), force=True)
 
-        from hermes_cli.backup import run_import
+        from devascent_cli.backup import run_import
         run_import(args)
 
         # Live runtime files are untouched; the backup's foreign ones never land.
@@ -733,7 +733,7 @@ class TestImport:
         hermes_home.mkdir()
         # Pre-existing config triggers the confirmation
         (hermes_home / "config.yaml").write_text("existing: true\n")
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         zip_path = tmp_path / "backup.zip"
@@ -743,7 +743,7 @@ class TestImport:
 
         args = Namespace(zipfile=str(zip_path), force=False)
 
-        from hermes_cli.backup import run_import
+        from devascent_cli.backup import run_import
         with patch("builtins.input", return_value="n"):
             run_import(args)
 
@@ -755,7 +755,7 @@ class TestImport:
         hermes_home = tmp_path / ".hermes"
         hermes_home.mkdir()
         (hermes_home / "config.yaml").write_text("existing: true\n")
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         zip_path = tmp_path / "backup.zip"
@@ -765,7 +765,7 @@ class TestImport:
 
         args = Namespace(zipfile=str(zip_path), force=True)
 
-        from hermes_cli.backup import run_import
+        from devascent_cli.backup import run_import
         run_import(args)
 
         assert (hermes_home / "config.yaml").read_text() == "model: restored\n"
@@ -774,11 +774,11 @@ class TestImport:
         """Import exits with error for nonexistent file."""
         hermes_home = tmp_path / ".hermes"
         hermes_home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
 
         args = Namespace(zipfile=str(tmp_path / "nonexistent.zip"), force=True)
 
-        from hermes_cli.backup import run_import
+        from devascent_cli.backup import run_import
         with pytest.raises(SystemExit):
             run_import(args)
 
@@ -787,7 +787,7 @@ class TestImport:
         """Secret files must end up at 0600 after restore (zipfile drops mode bits)."""
         hermes_home = tmp_path / ".hermes"
         hermes_home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         zip_path = tmp_path / "backup.zip"
@@ -801,7 +801,7 @@ class TestImport:
 
         args = Namespace(zipfile=str(zip_path), force=True)
 
-        from hermes_cli.backup import run_import
+        from devascent_cli.backup import run_import
         run_import(args)
 
         for rel in (".env", "auth.json", "state.db", "profiles/coder/.env"):
@@ -821,12 +821,12 @@ class TestRoundTrip:
         src_home.mkdir(parents=True)
         _make_hermes_tree(src_home)
 
-        monkeypatch.setenv("HERMES_HOME", str(src_home))
+        monkeypatch.setenv("DEVASCENT_HOME", str(src_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path / "source")
 
         # Backup
         out_zip = tmp_path / "roundtrip.zip"
-        from hermes_cli.backup import run_backup, run_import
+        from devascent_cli.backup import run_backup, run_import
 
         run_backup(Namespace(output=str(out_zip)))
         assert out_zip.exists()
@@ -834,7 +834,7 @@ class TestRoundTrip:
         # Import into a different location
         dst_home = tmp_path / "dest" / ".hermes"
         dst_home.mkdir(parents=True)
-        monkeypatch.setenv("HERMES_HOME", str(dst_home))
+        monkeypatch.setenv("DEVASCENT_HOME", str(dst_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path / "dest")
 
         run_import(Namespace(zipfile=str(out_zip), force=True))
@@ -848,7 +848,7 @@ class TestRoundTrip:
         assert (dst_home / "logs" / "agent.log").exists()
 
         # hermes-agent should NOT be present
-        assert not (dst_home / "hermes-agent").exists()
+        assert not (dst_home / "devascent").exists()
         # __pycache__ should NOT be present
         assert not (dst_home / "plugins" / "__pycache__").exists()
         # PID files should NOT be present
@@ -861,23 +861,23 @@ class TestRoundTrip:
 
 class TestFormatSize:
     def test_bytes(self):
-        from hermes_cli.backup import _format_size
+        from devascent_cli.backup import _format_size
         assert _format_size(512) == "512 B"
 
     def test_kilobytes(self):
-        from hermes_cli.backup import _format_size
+        from devascent_cli.backup import _format_size
         assert "KB" in _format_size(2048)
 
     def test_megabytes(self):
-        from hermes_cli.backup import _format_size
+        from devascent_cli.backup import _format_size
         assert "MB" in _format_size(5 * 1024 * 1024)
 
     def test_gigabytes(self):
-        from hermes_cli.backup import _format_size
+        from devascent_cli.backup import _format_size
         assert "GB" in _format_size(3 * 1024 ** 3)
 
     def test_terabytes(self):
-        from hermes_cli.backup import _format_size
+        from devascent_cli.backup import _format_size
         assert "TB" in _format_size(2 * 1024 ** 4)
 
 
@@ -885,7 +885,7 @@ class TestValidation:
     def test_validate_with_config(self):
         """Zip with config.yaml passes validation."""
         import io
-        from hermes_cli.backup import _validate_backup_zip
+        from devascent_cli.backup import _validate_backup_zip
 
         buf = io.BytesIO()
         with zipfile.ZipFile(buf, "w") as zf:
@@ -898,7 +898,7 @@ class TestValidation:
     def test_validate_with_env(self):
         """Zip with .env passes validation."""
         import io
-        from hermes_cli.backup import _validate_backup_zip
+        from devascent_cli.backup import _validate_backup_zip
 
         buf = io.BytesIO()
         with zipfile.ZipFile(buf, "w") as zf:
@@ -911,7 +911,7 @@ class TestValidation:
     def test_validate_rejects_random(self):
         """Zip without hermes markers fails validation."""
         import io
-        from hermes_cli.backup import _validate_backup_zip
+        from devascent_cli.backup import _validate_backup_zip
 
         buf = io.BytesIO()
         with zipfile.ZipFile(buf, "w") as zf:
@@ -924,7 +924,7 @@ class TestValidation:
     def test_detect_prefix_hermes(self):
         """Detects .hermes/ prefix wrapping all entries."""
         import io
-        from hermes_cli.backup import _detect_prefix
+        from devascent_cli.backup import _detect_prefix
 
         buf = io.BytesIO()
         with zipfile.ZipFile(buf, "w") as zf:
@@ -937,7 +937,7 @@ class TestValidation:
     def test_detect_prefix_none(self):
         """No prefix when entries are at root."""
         import io
-        from hermes_cli.backup import _detect_prefix
+        from devascent_cli.backup import _detect_prefix
 
         buf = io.BytesIO()
         with zipfile.ZipFile(buf, "w") as zf:
@@ -950,7 +950,7 @@ class TestValidation:
     def test_detect_prefix_only_dirs(self):
         """Prefix detection returns empty for zip with only directory entries."""
         import io
-        from hermes_cli.backup import _detect_prefix
+        from devascent_cli.backup import _detect_prefix
 
         buf = io.BytesIO()
         with zipfile.ZipFile(buf, "w") as zf:
@@ -970,12 +970,12 @@ class TestBackupEdgeCases:
     def test_nonexistent_hermes_home(self, tmp_path, monkeypatch):
         """Backup exits when hermes home doesn't exist."""
         fake_home = tmp_path / "nonexistent" / ".hermes"
-        monkeypatch.setenv("HERMES_HOME", str(fake_home))
+        monkeypatch.setenv("DEVASCENT_HOME", str(fake_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path / "nonexistent")
 
         args = Namespace(output=str(tmp_path / "out.zip"))
 
-        from hermes_cli.backup import run_backup
+        from devascent_cli.backup import run_backup
         with pytest.raises(SystemExit):
             run_backup(args)
 
@@ -985,7 +985,7 @@ class TestBackupEdgeCases:
         hermes_home.mkdir()
         (hermes_home / "config.yaml").write_text("model: test\n")
 
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         out_dir = tmp_path / "backups"
@@ -993,7 +993,7 @@ class TestBackupEdgeCases:
 
         args = Namespace(output=str(out_dir))
 
-        from hermes_cli.backup import run_backup
+        from devascent_cli.backup import run_backup
         run_backup(args)
 
         zips = list(out_dir.glob("hermes-backup-*.zip"))
@@ -1005,13 +1005,13 @@ class TestBackupEdgeCases:
         hermes_home.mkdir()
         (hermes_home / "config.yaml").write_text("model: test\n")
 
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         out_path = tmp_path / "mybackup.tar"
         args = Namespace(output=str(out_path))
 
-        from hermes_cli.backup import run_backup
+        from devascent_cli.backup import run_backup
         run_backup(args)
 
         # Should have .tar.zip suffix
@@ -1025,12 +1025,12 @@ class TestBackupEdgeCases:
         (hermes_home / "__pycache__").mkdir()
         (hermes_home / "__pycache__" / "foo.pyc").write_bytes(b"\x00")
 
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         args = Namespace(output=str(tmp_path / "out.zip"))
 
-        from hermes_cli.backup import run_backup
+        from devascent_cli.backup import run_backup
         run_backup(args)
 
         # No zip should be created
@@ -1047,13 +1047,13 @@ class TestBackupEdgeCases:
         bad_file.write_text("data")
         bad_file.chmod(0o000)
 
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         out_zip = tmp_path / "out.zip"
         args = Namespace(output=str(out_zip))
 
-        from hermes_cli.backup import run_backup
+        from devascent_cli.backup import run_backup
         try:
             run_backup(args)
         finally:
@@ -1074,13 +1074,13 @@ class TestBackupEdgeCases:
         old_file.write_text("old data")
         os.utime(old_file, (0, 0))
 
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         out_zip = tmp_path / "out.zip"
         args = Namespace(output=str(out_zip))
 
-        from hermes_cli.backup import run_backup
+        from devascent_cli.backup import run_backup
         run_backup(args)
 
         # Zip should still be created with the valid files
@@ -1097,14 +1097,14 @@ class TestBackupEdgeCases:
         hermes_home.mkdir()
         (hermes_home / "config.yaml").write_text("model: test\n")
 
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         # Output inside hermes home
         out_zip = hermes_home / "backup.zip"
         args = Namespace(output=str(out_zip))
 
-        from hermes_cli.backup import run_backup
+        from devascent_cli.backup import run_backup
         run_backup(args)
 
         # The zip should exist but not contain itself
@@ -1123,14 +1123,14 @@ class TestImportEdgeCases:
         """Import rejects a non-zip file."""
         hermes_home = tmp_path / ".hermes"
         hermes_home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
 
         not_zip = tmp_path / "fake.zip"
         not_zip.write_text("this is not a zip")
 
         args = Namespace(zipfile=str(not_zip), force=True)
 
-        from hermes_cli.backup import run_import
+        from devascent_cli.backup import run_import
         with pytest.raises(SystemExit):
             run_import(args)
 
@@ -1139,7 +1139,7 @@ class TestImportEdgeCases:
         hermes_home = tmp_path / ".hermes"
         hermes_home.mkdir()
         (hermes_home / "config.yaml").write_text("existing\n")
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         zip_path = tmp_path / "backup.zip"
@@ -1147,7 +1147,7 @@ class TestImportEdgeCases:
 
         args = Namespace(zipfile=str(zip_path), force=False)
 
-        from hermes_cli.backup import run_import
+        from devascent_cli.backup import run_import
         with patch("builtins.input", side_effect=EOFError):
             with pytest.raises(SystemExit):
                 run_import(args)
@@ -1157,7 +1157,7 @@ class TestImportEdgeCases:
         hermes_home = tmp_path / ".hermes"
         hermes_home.mkdir()
         (hermes_home / ".env").write_text("KEY=val\n")
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         zip_path = tmp_path / "backup.zip"
@@ -1165,7 +1165,7 @@ class TestImportEdgeCases:
 
         args = Namespace(zipfile=str(zip_path), force=False)
 
-        from hermes_cli.backup import run_import
+        from devascent_cli.backup import run_import
         with patch("builtins.input", side_effect=KeyboardInterrupt):
             with pytest.raises(SystemExit):
                 run_import(args)
@@ -1174,7 +1174,7 @@ class TestImportEdgeCases:
         """Import handles permission errors during extraction."""
         hermes_home = tmp_path / ".hermes"
         hermes_home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         # Create a read-only directory so extraction fails
@@ -1190,7 +1190,7 @@ class TestImportEdgeCases:
 
         args = Namespace(zipfile=str(zip_path), force=True)
 
-        from hermes_cli.backup import run_import
+        from devascent_cli.backup import run_import
         try:
             run_import(args)
         finally:
@@ -1203,7 +1203,7 @@ class TestImportEdgeCases:
         """Import shows progress with 500+ files."""
         hermes_home = tmp_path / ".hermes"
         hermes_home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         zip_path = tmp_path / "big.zip"
@@ -1215,7 +1215,7 @@ class TestImportEdgeCases:
 
         args = Namespace(zipfile=str(zip_path), force=True)
 
-        from hermes_cli.backup import run_import
+        from devascent_cli.backup import run_import
         run_import(args)
 
         assert (hermes_home / "config.yaml").exists()
@@ -1236,7 +1236,7 @@ class TestProfileRestoration:
         """Import auto-creates wrapper scripts for restored profiles."""
         hermes_home = tmp_path / ".hermes"
         hermes_home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         # Mock the wrapper dir to be inside tmp_path
@@ -1253,7 +1253,7 @@ class TestProfileRestoration:
 
         args = Namespace(zipfile=str(zip_path), force=True)
 
-        from hermes_cli.backup import run_import
+        from devascent_cli.backup import run_import
         run_import(args)
 
         # Profile directories should exist
@@ -1272,7 +1272,7 @@ class TestProfileRestoration:
         """Import doesn't create wrappers for profile dirs without config."""
         hermes_home = tmp_path / ".hermes"
         hermes_home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         wrapper_dir = tmp_path / ".local" / "bin"
@@ -1287,7 +1287,7 @@ class TestProfileRestoration:
 
         args = Namespace(zipfile=str(zip_path), force=True)
 
-        from hermes_cli.backup import run_import
+        from devascent_cli.backup import run_import
         run_import(args)
 
         # Only valid profile should get a wrapper
@@ -1298,7 +1298,7 @@ class TestProfileRestoration:
         """Import gracefully handles missing profiles module (fresh install)."""
         hermes_home = tmp_path / ".hermes"
         hermes_home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         zip_path = tmp_path / "backup.zip"
@@ -1313,11 +1313,11 @@ class TestProfileRestoration:
         original_import = __builtins__.__import__ if hasattr(__builtins__, '__import__') else __import__
 
         def fake_import(name, *a, **kw):
-            if name == "hermes_cli.profiles":
+            if name == "devascent_cli.profiles":
                 raise ImportError("no profiles module")
             return original_import(name, *a, **kw)
 
-        from hermes_cli.backup import run_import
+        from devascent_cli.backup import run_import
         with patch("builtins.__import__", side_effect=fake_import):
             run_import(args)
 
@@ -1331,7 +1331,7 @@ class TestProfileRestoration:
 
 class TestSafeCopyDb:
     def test_copies_valid_database(self, tmp_path):
-        from hermes_cli.backup import _safe_copy_db
+        from devascent_cli.backup import _safe_copy_db
         src = tmp_path / "test.db"
         dst = tmp_path / "copy.db"
 
@@ -1350,7 +1350,7 @@ class TestSafeCopyDb:
         assert rows == [(42,)]
 
     def test_copies_wal_mode_database(self, tmp_path):
-        from hermes_cli.backup import _safe_copy_db
+        from devascent_cli.backup import _safe_copy_db
         src = tmp_path / "wal.db"
         dst = tmp_path / "copy.db"
 
@@ -1377,7 +1377,7 @@ class TestSafeCopyDb:
 class TestQuickSnapshot:
     @pytest.fixture
     def hermes_home(self, tmp_path):
-        """Create a fake HERMES_HOME with critical state files."""
+        """Create a fake DEVASCENT_HOME with critical state files."""
         home = tmp_path / ".hermes"
         home.mkdir()
         (home / "config.yaml").write_text("model:\n  provider: openrouter\n")
@@ -1399,7 +1399,7 @@ class TestQuickSnapshot:
         return home
 
     def test_creates_snapshot(self, hermes_home):
-        from hermes_cli.backup import create_quick_snapshot
+        from devascent_cli.backup import create_quick_snapshot
         snap_id = create_quick_snapshot(hermes_home=hermes_home)
         assert snap_id is not None
         snap_dir = hermes_home / "state-snapshots" / snap_id
@@ -1407,12 +1407,12 @@ class TestQuickSnapshot:
         assert (snap_dir / "manifest.json").exists()
 
     def test_label_in_id(self, hermes_home):
-        from hermes_cli.backup import create_quick_snapshot
+        from devascent_cli.backup import create_quick_snapshot
         snap_id = create_quick_snapshot(label="before-upgrade", hermes_home=hermes_home)
         assert "before-upgrade" in snap_id
 
     def test_state_db_safely_copied(self, hermes_home):
-        from hermes_cli.backup import create_quick_snapshot
+        from devascent_cli.backup import create_quick_snapshot
         snap_id = create_quick_snapshot(hermes_home=hermes_home)
         db_copy = hermes_home / "state-snapshots" / snap_id / "state.db"
         assert db_copy.exists()
@@ -1424,19 +1424,19 @@ class TestQuickSnapshot:
         assert rows[0] == ("s1", "hello world")
 
     def test_copies_nested_files(self, hermes_home):
-        from hermes_cli.backup import create_quick_snapshot
+        from devascent_cli.backup import create_quick_snapshot
         snap_id = create_quick_snapshot(hermes_home=hermes_home)
         assert (hermes_home / "state-snapshots" / snap_id / "cron" / "jobs.json").exists()
 
     def test_copies_channel_aliases(self, hermes_home):
-        from hermes_cli.backup import create_quick_snapshot
+        from devascent_cli.backup import create_quick_snapshot
         snap_id = create_quick_snapshot(hermes_home=hermes_home)
         copied = hermes_home / "state-snapshots" / snap_id / "channel_aliases.json"
         assert copied.exists()
         assert "120363408391911677@g.us" in copied.read_text()
 
     def test_missing_files_skipped(self, hermes_home):
-        from hermes_cli.backup import create_quick_snapshot
+        from devascent_cli.backup import create_quick_snapshot
         snap_id = create_quick_snapshot(hermes_home=hermes_home)
         with open(hermes_home / "state-snapshots" / snap_id / "manifest.json") as f:
             meta = json.load(f)
@@ -1444,13 +1444,13 @@ class TestQuickSnapshot:
         assert "gateway_state.json" not in meta["files"]
 
     def test_empty_home_returns_none(self, tmp_path):
-        from hermes_cli.backup import create_quick_snapshot
+        from devascent_cli.backup import create_quick_snapshot
         empty = tmp_path / "empty"
         empty.mkdir()
         assert create_quick_snapshot(hermes_home=empty) is None
 
     def test_list_snapshots(self, hermes_home):
-        from hermes_cli.backup import create_quick_snapshot, list_quick_snapshots
+        from devascent_cli.backup import create_quick_snapshot, list_quick_snapshots
         id1 = create_quick_snapshot(label="first", hermes_home=hermes_home)
         id2 = create_quick_snapshot(label="second", hermes_home=hermes_home)
 
@@ -1460,14 +1460,14 @@ class TestQuickSnapshot:
         assert snaps[1]["id"] == id1
 
     def test_list_limit(self, hermes_home):
-        from hermes_cli.backup import create_quick_snapshot, list_quick_snapshots
+        from devascent_cli.backup import create_quick_snapshot, list_quick_snapshots
         for i in range(5):
             create_quick_snapshot(label=f"s{i}", hermes_home=hermes_home)
         snaps = list_quick_snapshots(limit=3, hermes_home=hermes_home)
         assert len(snaps) == 3
 
     def test_restore_config(self, hermes_home):
-        from hermes_cli.backup import create_quick_snapshot, restore_quick_snapshot
+        from devascent_cli.backup import create_quick_snapshot, restore_quick_snapshot
         snap_id = create_quick_snapshot(hermes_home=hermes_home)
 
         (hermes_home / "config.yaml").write_text("model:\n  provider: anthropic\n")
@@ -1478,7 +1478,7 @@ class TestQuickSnapshot:
         assert "openrouter" in (hermes_home / "config.yaml").read_text()
 
     def test_restore_state_db(self, hermes_home):
-        from hermes_cli.backup import create_quick_snapshot, restore_quick_snapshot
+        from devascent_cli.backup import create_quick_snapshot, restore_quick_snapshot
         snap_id = create_quick_snapshot(hermes_home=hermes_home)
 
         conn = sqlite3.connect(str(hermes_home / "state.db"))
@@ -1494,18 +1494,18 @@ class TestQuickSnapshot:
         assert len(rows) == 1
 
     def test_restore_nonexistent(self, hermes_home):
-        from hermes_cli.backup import restore_quick_snapshot
+        from devascent_cli.backup import restore_quick_snapshot
         assert restore_quick_snapshot("nonexistent", hermes_home=hermes_home) is False
 
     def test_auto_prune(self, hermes_home):
-        from hermes_cli.backup import create_quick_snapshot, list_quick_snapshots, _QUICK_DEFAULT_KEEP
+        from devascent_cli.backup import create_quick_snapshot, list_quick_snapshots, _QUICK_DEFAULT_KEEP
         for i in range(_QUICK_DEFAULT_KEEP + 5):
             create_quick_snapshot(label=f"snap-{i:03d}", hermes_home=hermes_home)
         snaps = list_quick_snapshots(limit=100, hermes_home=hermes_home)
         assert len(snaps) <= _QUICK_DEFAULT_KEEP
 
     def test_manual_prune(self, hermes_home):
-        from hermes_cli.backup import create_quick_snapshot, prune_quick_snapshots, list_quick_snapshots
+        from devascent_cli.backup import create_quick_snapshot, prune_quick_snapshots, list_quick_snapshots
         for i in range(10):
             create_quick_snapshot(label=f"s{i}", hermes_home=hermes_home)
         deleted = prune_quick_snapshots(keep=3, hermes_home=hermes_home)
@@ -1516,7 +1516,7 @@ class TestQuickSnapshot:
         """Pairing JSONs live outside state.db — snapshot must capture them
         recursively (generic + per-platform) so approved-user lists survive
         disasters like #15733."""
-        from hermes_cli.backup import create_quick_snapshot
+        from devascent_cli.backup import create_quick_snapshot
 
         # Generic pairing store (new location)
         (hermes_home / "platforms" / "pairing").mkdir(parents=True)
@@ -1555,7 +1555,7 @@ class TestQuickSnapshot:
 
     def test_restore_recovers_pairing_data(self, hermes_home):
         """After restore, deleted pairing files reappear with original content."""
-        from hermes_cli.backup import create_quick_snapshot, restore_quick_snapshot
+        from devascent_cli.backup import create_quick_snapshot, restore_quick_snapshot
 
         pairing_dir = hermes_home / "platforms" / "pairing"
         pairing_dir.mkdir(parents=True)
@@ -1581,7 +1581,7 @@ class TestQuickSnapshot:
 
     def test_empty_pairing_dir_does_not_fail(self, hermes_home):
         """An empty pairing directory should be silently skipped."""
-        from hermes_cli.backup import create_quick_snapshot
+        from devascent_cli.backup import create_quick_snapshot
 
         (hermes_home / "platforms" / "pairing").mkdir(parents=True)
         # Directory exists but contains no files.
@@ -1609,7 +1609,7 @@ class TestQuickSnapshot:
 
         Regression for the path-traversal surface where ``root /
         snapshot_id`` could resolve above the snapshots root."""
-        from hermes_cli.backup import restore_quick_snapshot
+        from devascent_cli.backup import restore_quick_snapshot
 
         hostile_ids = [
             "../../etc",                # parent traversal
@@ -1628,8 +1628,8 @@ class TestQuickSnapshot:
     def test_restore_rejects_manifest_rel_traversal(self, hermes_home):
         """A snapshot whose manifest.json contains a rel path that escapes
         the snapshot directory (e.g. ``../../outside.txt``) must skip that
-        entry rather than restoring outside HERMES_HOME."""
-        from hermes_cli.backup import create_quick_snapshot, restore_quick_snapshot
+        entry rather than restoring outside DEVASCENT_HOME."""
+        from devascent_cli.backup import create_quick_snapshot, restore_quick_snapshot
 
         snap_id = create_quick_snapshot(hermes_home=hermes_home)
         assert snap_id is not None
@@ -1660,7 +1660,7 @@ class TestQuickSnapshot:
         restore_quick_snapshot(snap_id, hermes_home=hermes_home)
 
         assert not escape_dst.exists(), (
-            f"manifest rel traversal escaped HERMES_HOME: {escape_dst} exists"
+            f"manifest rel traversal escaped DEVASCENT_HOME: {escape_dst} exists"
         )
 
         # Cleanup the seeded escape source so the test is hermetic.
@@ -1678,7 +1678,7 @@ class TestPreUpdateBackup:
         return root
 
     def test_creates_backup_under_backups_dir(self, hermes_home):
-        from hermes_cli.backup import create_pre_update_backup
+        from devascent_cli.backup import create_pre_update_backup
         out = create_pre_update_backup(hermes_home=hermes_home)
         assert out is not None
         assert out.exists()
@@ -1689,7 +1689,7 @@ class TestPreUpdateBackup:
     def test_backup_contents_match_full_backup(self, hermes_home):
         """Pre-update backup should include the same user data that
         ``hermes backup`` would, and should exclude the same directories."""
-        from hermes_cli.backup import create_pre_update_backup
+        from devascent_cli.backup import create_pre_update_backup
         out = create_pre_update_backup(hermes_home=hermes_home)
         assert out is not None
         with zipfile.ZipFile(out) as zf:
@@ -1710,7 +1710,7 @@ class TestPreUpdateBackup:
     def test_does_not_recurse_into_prior_backups(self, hermes_home):
         """The ``backups/`` directory must be excluded so that each backup
         doesn't grow exponentially by including all prior backups."""
-        from hermes_cli.backup import create_pre_update_backup
+        from devascent_cli.backup import create_pre_update_backup
         # First backup
         out1 = create_pre_update_backup(hermes_home=hermes_home)
         assert out1 is not None
@@ -1728,7 +1728,7 @@ class TestPreUpdateBackup:
         """After more than ``keep`` backups are created, older ones are
         pruned automatically."""
         import time as _t
-        from hermes_cli.backup import create_pre_update_backup
+        from devascent_cli.backup import create_pre_update_backup
 
         created = []
         for _ in range(5):
@@ -1751,7 +1751,7 @@ class TestPreUpdateBackup:
         """Hand-dropped zips in ``backups/`` must not be touched by
         rotation — it only prunes files matching ``pre-update-*.zip``."""
         import time as _t
-        from hermes_cli.backup import create_pre_update_backup
+        from devascent_cli.backup import create_pre_update_backup
 
         (hermes_home / "backups").mkdir(exist_ok=True)
         manual = hermes_home / "backups" / "my-manual.zip"
@@ -1764,7 +1764,7 @@ class TestPreUpdateBackup:
         assert manual.exists(), "Manual backup zip was incorrectly pruned"
 
     def test_returns_none_if_root_missing(self, tmp_path):
-        from hermes_cli.backup import create_pre_update_backup
+        from devascent_cli.backup import create_pre_update_backup
         assert create_pre_update_backup(hermes_home=tmp_path / "does-not-exist") is None
 
     def test_keep_zero_does_not_delete_freshly_created_backup(self, hermes_home):
@@ -1774,7 +1774,7 @@ class TestPreUpdateBackup:
         regardless of misconfiguration; users who don't want backups should
         set ``pre_update_backup: false`` instead.
         """
-        from hermes_cli.backup import create_pre_update_backup
+        from devascent_cli.backup import create_pre_update_backup
         out = create_pre_update_backup(hermes_home=hermes_home, keep=0)
         assert out is not None
         assert out.exists(), (
@@ -1785,7 +1785,7 @@ class TestPreUpdateBackup:
     def test_keep_negative_does_not_delete_freshly_created_backup(self, hermes_home):
         """Mirror coverage: any value <1 should be floored, not literally
         applied as a slice index."""
-        from hermes_cli.backup import create_pre_update_backup
+        from devascent_cli.backup import create_pre_update_backup
         out = create_pre_update_backup(hermes_home=hermes_home, keep=-3)
         assert out is not None
         assert out.exists()
@@ -1796,7 +1796,7 @@ class TestPreUpdateBackup:
         still remove pre-existing backups beyond the (floored) limit of 1.
         """
         import time as _t
-        from hermes_cli.backup import create_pre_update_backup
+        from devascent_cli.backup import create_pre_update_backup
 
         first = create_pre_update_backup(hermes_home=hermes_home, keep=5)
         _t.sleep(1.05)
@@ -1815,8 +1815,8 @@ class TestPreUpdateBackup:
         )
 
     def test_skips_symlinked_files(self, hermes_home, tmp_path):
-        """Pre-update backups must not dereference symlinks outside HERMES_HOME."""
-        from hermes_cli.backup import create_pre_update_backup
+        """Pre-update backups must not dereference symlinks outside DEVASCENT_HOME."""
+        from devascent_cli.backup import create_pre_update_backup
 
         outside = tmp_path / "outside-secret.txt"
         outside.write_text("outside secret\n")
@@ -1839,19 +1839,19 @@ class TestRunPreUpdateBackup:
         root = tmp_path / ".hermes"
         root.mkdir()
         _make_hermes_tree(root)
-        # Point HERMES_HOME at the temp dir so config + backup paths resolve here
-        monkeypatch.setenv("HERMES_HOME", str(root))
+        # Point DEVASCENT_HOME at the temp dir so config + backup paths resolve here
+        monkeypatch.setenv("DEVASCENT_HOME", str(root))
         # Make Path.home() point at tmp_path for anything that uses it
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        # Bust caches for hermes_cli.config + hermes_constants so they pick up HERMES_HOME
+        # Bust caches for devascent_cli.config + devascent_constants so they pick up DEVASCENT_HOME
         for mod in list(__import__("sys").modules.keys()):
-            if mod.startswith("hermes_cli.config") or mod == "hermes_constants":
+            if mod.startswith("devascent_cli.config") or mod == "devascent_constants":
                 del __import__("sys").modules[mod]
         return root
 
     def test_backup_flag_creates_backup(self, hermes_home, capsys):
         """--backup forces the pre-update backup for one run even when config is off."""
-        from hermes_cli.main import _run_pre_update_backup
+        from devascent_cli.main import _run_pre_update_backup
         _run_pre_update_backup(Namespace(no_backup=False, backup=True))
         out = capsys.readouterr().out
         assert "Creating pre-update backup" in out
@@ -1867,11 +1867,11 @@ class TestRunPreUpdateBackup:
         """With the new safe default (``pre_update_backup: true``), every
         ``hermes update`` creates a backup before any destructive step
         runs — the cost is a few minutes of zip time vs. the alternative
-        of silent total data loss of ``~/.hermes/`` observed in #48200
+        of silent total data loss of ``~/.devascent/`` observed in #48200
         when an update step computes a wrong path and the user had no
         safety net.
         """
-        from hermes_cli.main import _run_pre_update_backup
+        from devascent_cli.main import _run_pre_update_backup
         _run_pre_update_backup(Namespace(no_backup=False, backup=False))
         out = capsys.readouterr().out
         assert "Creating pre-update backup" in out
@@ -1880,7 +1880,7 @@ class TestRunPreUpdateBackup:
         assert len(backups) == 1
 
     def test_no_backup_flag_skips(self, hermes_home, capsys):
-        from hermes_cli.main import _run_pre_update_backup
+        from devascent_cli.main import _run_pre_update_backup
         _run_pre_update_backup(Namespace(no_backup=True, backup=False))
         out = capsys.readouterr().out
         assert "skipped (--no-backup)" in out
@@ -1900,10 +1900,10 @@ class TestRunPreUpdateBackup:
         }))
         import sys as _sys
         for mod in list(_sys.modules.keys()):
-            if mod.startswith("hermes_cli.config"):
+            if mod.startswith("devascent_cli.config"):
                 del _sys.modules[mod]
 
-        from hermes_cli.main import _run_pre_update_backup
+        from devascent_cli.main import _run_pre_update_backup
         _run_pre_update_backup(Namespace(no_backup=False, backup=False))
         out = capsys.readouterr().out
         assert "Creating pre-update backup" in out
@@ -1922,10 +1922,10 @@ class TestRunPreUpdateBackup:
         # Ensure config module re-reads
         import sys as _sys
         for mod in list(_sys.modules.keys()):
-            if mod.startswith("hermes_cli.config"):
+            if mod.startswith("devascent_cli.config"):
                 del _sys.modules[mod]
 
-        from hermes_cli.main import _run_pre_update_backup
+        from devascent_cli.main import _run_pre_update_backup
         _run_pre_update_backup(Namespace(no_backup=False, backup=False))
         out = capsys.readouterr().out
         assert out == ""
@@ -1941,10 +1941,10 @@ class TestRunPreUpdateBackup:
         }))
         import sys as _sys
         for mod in list(_sys.modules.keys()):
-            if mod.startswith("hermes_cli.config"):
+            if mod.startswith("devascent_cli.config"):
                 del _sys.modules[mod]
 
-        from hermes_cli.main import _run_pre_update_backup
+        from devascent_cli.main import _run_pre_update_backup
         _run_pre_update_backup(Namespace(no_backup=True, backup=False))
         out = capsys.readouterr().out
         assert "skipped (--no-backup)" in out
@@ -1956,7 +1956,7 @@ class TestRunPreUpdateBackup:
 
 class TestPreMigrationBackup:
     """Tests for create_pre_migration_backup — the auto-backup
-    ``hermes claw migrate`` runs before mutating ~/.hermes/."""
+    ``hermes claw migrate`` runs before mutating ~/.devascent/."""
 
     @pytest.fixture
     def hermes_home(self, tmp_path):
@@ -1966,7 +1966,7 @@ class TestPreMigrationBackup:
         return root
 
     def test_creates_backup_under_backups_dir(self, hermes_home):
-        from hermes_cli.backup import create_pre_migration_backup
+        from devascent_cli.backup import create_pre_migration_backup
         out = create_pre_migration_backup(hermes_home=hermes_home)
         assert out is not None
         assert out.exists()
@@ -1979,7 +1979,7 @@ class TestPreMigrationBackup:
     def test_backup_uses_shared_exclusion_rules(self, hermes_home):
         """Pre-migration backup reuses the same exclusion rules as
         ``hermes backup`` / ``create_pre_update_backup`` — no drift."""
-        from hermes_cli.backup import create_pre_migration_backup
+        from devascent_cli.backup import create_pre_migration_backup
         out = create_pre_migration_backup(hermes_home=hermes_home)
         assert out is not None
         with zipfile.ZipFile(out) as zf:
@@ -1996,7 +1996,7 @@ class TestPreMigrationBackup:
     def test_restorable_with_hermes_import(self, hermes_home, tmp_path):
         """The zip produced by pre-migration backup must be a valid Hermes
         backup — `hermes import` should accept it."""
-        from hermes_cli.backup import create_pre_migration_backup, _validate_backup_zip
+        from devascent_cli.backup import create_pre_migration_backup, _validate_backup_zip
         out = create_pre_migration_backup(hermes_home=hermes_home)
         assert out is not None
         with zipfile.ZipFile(out) as zf:
@@ -2004,7 +2004,7 @@ class TestPreMigrationBackup:
         assert valid, "pre-migration zip failed _validate_backup_zip"
 
     def test_does_not_recurse_into_prior_backups(self, hermes_home):
-        from hermes_cli.backup import create_pre_migration_backup
+        from devascent_cli.backup import create_pre_migration_backup
         out1 = create_pre_migration_backup(hermes_home=hermes_home)
         assert out1 is not None
         out2 = create_pre_migration_backup(hermes_home=hermes_home)
@@ -2015,7 +2015,7 @@ class TestPreMigrationBackup:
 
     def test_rotation_keeps_only_n(self, hermes_home):
         import time as _t
-        from hermes_cli.backup import create_pre_migration_backup
+        from devascent_cli.backup import create_pre_migration_backup
 
         created = []
         for _ in range(7):
@@ -2028,8 +2028,8 @@ class TestPreMigrationBackup:
         assert len(remaining) <= 3, f"expected <=3 backups retained, got {len(remaining)}"
 
     def test_missing_hermes_home_returns_none(self, tmp_path):
-        """Fresh install with no ~/.hermes yet — nothing to back up."""
-        from hermes_cli.backup import create_pre_migration_backup
+        """Fresh install with no ~/.devascent yet — nothing to back up."""
+        from devascent_cli.backup import create_pre_migration_backup
         missing = tmp_path / "does-not-exist"
         out = create_pre_migration_backup(hermes_home=missing)
         assert out is None
@@ -2037,7 +2037,7 @@ class TestPreMigrationBackup:
     def test_does_not_touch_pre_update_backups(self, hermes_home):
         """Pre-migration rotation must only prune pre-migration-*.zip files,
         leaving pre-update-*.zip backups untouched."""
-        from hermes_cli.backup import create_pre_update_backup, create_pre_migration_backup
+        from devascent_cli.backup import create_pre_update_backup, create_pre_migration_backup
         update_backup = create_pre_update_backup(hermes_home=hermes_home, keep=5)
         assert update_backup is not None and update_backup.exists()
         # Spin up a lot of migration backups with keep=1
@@ -2065,11 +2065,11 @@ class TestRestoreCronJobsIfEmptied:
         path.write_text(json.dumps({"jobs": jobs}))
 
     def _make_snapshot(self, hermes_home: Path, label="pre-update"):
-        from hermes_cli.backup import create_quick_snapshot
+        from devascent_cli.backup import create_quick_snapshot
         return create_quick_snapshot(label=label, hermes_home=hermes_home, keep=5)
 
     def test_restores_when_emptied_after_migration(self, tmp_path):
-        from hermes_cli.backup import restore_cron_jobs_if_emptied
+        from devascent_cli.backup import restore_cron_jobs_if_emptied
         hermes_home = tmp_path / ".hermes"
         jobs_path = hermes_home / "cron" / "jobs.json"
         # Pre-update: 3 real jobs.
@@ -2091,7 +2091,7 @@ class TestRestoreCronJobsIfEmptied:
         assert len(restored["jobs"]) == 3
 
     def test_noop_when_live_file_still_has_jobs(self, tmp_path):
-        from hermes_cli.backup import restore_cron_jobs_if_emptied
+        from devascent_cli.backup import restore_cron_jobs_if_emptied
         hermes_home = tmp_path / ".hermes"
         jobs_path = hermes_home / "cron" / "jobs.json"
         self._seed_jobs(jobs_path, [{"id": "a"}, {"id": "b"}])
@@ -2102,7 +2102,7 @@ class TestRestoreCronJobsIfEmptied:
         assert result is None
 
     def test_noop_when_snapshot_had_no_jobs(self, tmp_path):
-        from hermes_cli.backup import restore_cron_jobs_if_emptied
+        from devascent_cli.backup import restore_cron_jobs_if_emptied
         hermes_home = tmp_path / ".hermes"
         jobs_path = hermes_home / "cron" / "jobs.json"
         # Pre-update genuinely had zero jobs; current is also empty.
@@ -2116,7 +2116,7 @@ class TestRestoreCronJobsIfEmptied:
     def test_noop_when_live_file_unreadable(self, tmp_path):
         """An unparseable live file is left alone — that's a different failure
         mode the user should see, not silently overwrite."""
-        from hermes_cli.backup import restore_cron_jobs_if_emptied
+        from devascent_cli.backup import restore_cron_jobs_if_emptied
         hermes_home = tmp_path / ".hermes"
         jobs_path = hermes_home / "cron" / "jobs.json"
         self._seed_jobs(jobs_path, [{"id": "a"}])
@@ -2129,7 +2129,7 @@ class TestRestoreCronJobsIfEmptied:
         assert jobs_path.read_text() == "{ this is not valid json"
 
     def test_noop_when_snapshot_id_missing(self, tmp_path):
-        from hermes_cli.backup import restore_cron_jobs_if_emptied
+        from devascent_cli.backup import restore_cron_jobs_if_emptied
         hermes_home = tmp_path / ".hermes"
         jobs_path = hermes_home / "cron" / "jobs.json"
         self._seed_jobs(jobs_path, [])
@@ -2139,7 +2139,7 @@ class TestRestoreCronJobsIfEmptied:
     def test_restores_legacy_bare_list_snapshot_shape(self, tmp_path):
         """A legacy snapshot storing a bare JSON list (not {"jobs": [...]}) is
         still counted and restored."""
-        from hermes_cli.backup import restore_cron_jobs_if_emptied
+        from devascent_cli.backup import restore_cron_jobs_if_emptied
         hermes_home = tmp_path / ".hermes"
         jobs_path = hermes_home / "cron" / "jobs.json"
         jobs_path.parent.mkdir(parents=True, exist_ok=True)
@@ -2155,7 +2155,7 @@ class TestRestoreCronJobsIfEmptied:
 # ---------------------------------------------------------------------------
 # Memory-provider external paths (~/.honcho, ~/.hindsight, ...) — captured via
 # MemoryProvider.backup_paths() and restored to their original home-relative
-# location, NOT under HERMES_HOME. (backup/import cycle data-loss fix)
+# location, NOT under DEVASCENT_HOME. (backup/import cycle data-loss fix)
 # ---------------------------------------------------------------------------
 
 class TestMemoryProviderExternalPaths:
@@ -2170,17 +2170,17 @@ class TestMemoryProviderExternalPaths:
         encoded relative to the home directory."""
         hermes_home = tmp_path / ".hermes"
         self._make_min_tree(hermes_home)
-        # External provider state living OUTSIDE HERMES_HOME.
+        # External provider state living OUTSIDE DEVASCENT_HOME.
         honcho = tmp_path / ".honcho"
         honcho.mkdir()
         (honcho / "config.json").write_text('{"peer":"alice"}')
         (honcho / "sub").mkdir()
         (honcho / "sub" / "x.json").write_text('{"a":1}')
 
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
-        import hermes_cli.backup as backup_mod
+        import devascent_cli.backup as backup_mod
         monkeypatch.setattr(
             backup_mod, "_collect_memory_provider_external_paths", lambda: [honcho]
         )
@@ -2204,10 +2204,10 @@ class TestMemoryProviderExternalPaths:
         outside.mkdir(exist_ok=True)
         (outside / "leak.json").write_text('{"secret":1}')
 
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
-        import hermes_cli.backup as backup_mod
+        import devascent_cli.backup as backup_mod
         monkeypatch.setattr(
             backup_mod, "_collect_memory_provider_external_paths", lambda: [outside]
         )
@@ -2223,7 +2223,7 @@ class TestMemoryProviderExternalPaths:
         outside.rmdir()
 
     def test_import_restores_external_to_home_relative_location(self, tmp_path, monkeypatch):
-        """_external/ members restore to ~/<relpath>, not under HERMES_HOME,
+        """_external/ members restore to ~/<relpath>, not under DEVASCENT_HOME,
         and credential-shaped files get 0600."""
         dst_home = tmp_path / "dst"
         dst_home.mkdir()
@@ -2237,10 +2237,10 @@ class TestMemoryProviderExternalPaths:
             zf.writestr("state.db", "")
             zf.writestr("_external/.honcho/config.json", '{"peer":"bob"}')
 
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: dst_home)
 
-        from hermes_cli.backup import run_import
+        from devascent_cli.backup import run_import
         run_import(Namespace(zipfile=str(zip_path), force=True))
 
         restored = dst_home / ".honcho" / "config.json"
@@ -2248,7 +2248,7 @@ class TestMemoryProviderExternalPaths:
         assert restored.read_text() == '{"peer":"bob"}'
         # Credential-shaped file tightened.
         assert (restored.stat().st_mode & 0o777) == 0o600
-        # External state did NOT leak into HERMES_HOME.
+        # External state did NOT leak into DEVASCENT_HOME.
         assert not (hermes_home / "_external").exists()
 
     def test_import_blocks_external_path_traversal(self, tmp_path, monkeypatch):
@@ -2266,10 +2266,10 @@ class TestMemoryProviderExternalPaths:
             zf.writestr("state.db", "")
             zf.writestr("_external/../../PWNED", "pwned")
 
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: dst_home)
 
-        from hermes_cli.backup import run_import
+        from devascent_cli.backup import run_import
         run_import(Namespace(zipfile=str(zip_path), force=True))
 
         assert not sentinel.exists()

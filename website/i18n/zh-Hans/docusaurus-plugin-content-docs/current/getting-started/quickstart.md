@@ -140,8 +140,8 @@ Hermes Agent 要求模型至少具备 **64,000 个 token** 的上下文窗口。
 
 Hermes 将密钥与普通配置分开存储：
 
-- **密钥和 token** → `~/.hermes/.env`
-- **非密钥配置** → `~/.hermes/config.yaml`
+- **密钥和 token** → `~/.devascent/.env`
+- **非密钥配置** → `~/.devascent/config.yaml`
 
 通过 CLI 设置值是最简便的方式，系统会自动将值写入正确的文件：
 
@@ -257,8 +257,8 @@ hermes config set terminal.backend ssh       # 远程服务器
 
 ```bash
 # 在 Hermes 安装目录下运行（curl 安装器在 Linux/macOS 上将其放置于
-# ~/.hermes/hermes-agent，在 Windows 上为 %LOCALAPPDATA%\hermes\hermes-agent）：
-cd ~/.hermes/hermes-agent
+# ~/.devascent/hermes-agent，在 Windows 上为 %LOCALAPPDATA%\hermes\hermes-agent）：
+cd ~/.devascent/hermes-agent
 uv pip install -e ".[voice]"
 # 包含 faster-whisper，用于免费的本地语音转文字
 ```
@@ -277,7 +277,7 @@ hermes skills install openai/skills/k8s
 ### MCP 服务器
 
 ```yaml
-# 添加到 ~/.hermes/config.yaml
+# 添加到 ~/.devascent/config.yaml
 mcp_servers:
   github:
     command: npx
@@ -294,7 +294,7 @@ ACP 支持已包含在标准 `[all]` 扩展中，因此 curl 安装器已默认�
 hermes acp
 ```
 
-（如果安装时未包含 `[all]`，请先运行 `cd ~/.hermes/hermes-agent && uv pip install -e ".[acp]"`。）
+（如果安装时未包含 `[all]`，请先运行 `cd ~/.devascent/hermes-agent && uv pip install -e ".[acp]"`。）
 
 参阅 [ACP 编辑器集成](../user-guide/features/acp.md)。
 

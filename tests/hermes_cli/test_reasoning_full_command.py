@@ -11,8 +11,8 @@ import os
 
 import yaml
 
-from hermes_cli.cli_commands_mixin import CLICommandsMixin
-from hermes_cli.config import DEFAULT_CONFIG
+from devascent_cli.cli_commands_mixin import CLICommandsMixin
+from devascent_cli.config import DEFAULT_CONFIG
 
 
 class _Stub(CLICommandsMixin):
@@ -37,7 +37,7 @@ def _seed_config(tmp_path, monkeypatch):
     hh = tmp_path / ".hermes"
     hh.mkdir()
     (hh / "config.yaml").write_text("display:\n  show_reasoning: true\n")
-    monkeypatch.setenv("HERMES_HOME", str(hh))
+    monkeypatch.setenv("DEVASCENT_HOME", str(hh))
     # cli captures _hermes_home at import; force it to the temp home.
     import cli
 

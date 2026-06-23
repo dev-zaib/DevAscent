@@ -143,9 +143,9 @@ kill <PID>
 
 与上述原因相同——重定向从未返回。检查隧道是否仍然存活（`ssh -N` 不显示输出，查看启动它的终端），必要时重启，然后重新运行 `hermes auth add xai-oauth --no-browser`。
 
-### Token 写入了错误的 `~/.hermes`
+### Token 写入了错误的 `~/.devascent`
 
-Token 写入运行 `hermes auth add ...` 的 Linux 用户目录下。如果你的网关 / systemd 服务以不同用户（如 `root` 或专用的 `hermes` 用户）运行，请以**该**用户身份进行认证，使 token 写入其 `~/.hermes/auth.json`。使用 `sudo -u hermes -i` 或等效命令。
+Token 写入运行 `hermes auth add ...` 的 Linux 用户目录下。如果你的网关 / systemd 服务以不同用户（如 `root` 或专用的 `hermes` 用户）运行，请以**该**用户身份进行认证，使 token 写入其 `~/.devascent/auth.json`。使用 `sudo -u hermes -i` 或等效命令。
 
 ## 另请参阅
 

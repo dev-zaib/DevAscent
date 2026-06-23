@@ -69,7 +69,7 @@ hermes tools
 ### 配置
 
 ```yaml
-# 在 ~/.hermes/config.yaml 中
+# 在 ~/.devascent/config.yaml 中
 terminal:
   backend: local    # 或：docker, ssh, singularity, modal, daytona
   cwd: "."          # 工作目录
@@ -97,7 +97,7 @@ terminal:
   backend: ssh
 ```
 ```bash
-# 在 ~/.hermes/.env 中设置凭据
+# 在 ~/.devascent/.env 中设置凭据
 TERMINAL_SSH_HOST=my-server.example.com
 TERMINAL_SSH_USER=myuser
 TERMINAL_SSH_KEY=~/.ssh/id_rsa
@@ -171,8 +171,8 @@ PTY 模式（`pty=true`）可启用 Codex 和 Claude Code 等交互式 CLI 工�
 
 ## Sudo 支持
 
-如果命令需要 sudo，系统会提示你输入密码（在本次会话内缓存）。也可在 `~/.hermes/.env` 中设置 `SUDO_PASSWORD`。
+如果命令需要 sudo，系统会提示你输入密码（在本次会话内缓存）。也可在 `~/.devascent/.env` 中设置 `SUDO_PASSWORD`。
 
 :::warning
-在消息平台上，如果 sudo 失败，输出中会提示将 `SUDO_PASSWORD` 添加到 `~/.hermes/.env`。
+在消息平台上，如果 sudo 失败，输出中会提示将 `SUDO_PASSWORD` 添加到 `~/.devascent/.env`。
 :::

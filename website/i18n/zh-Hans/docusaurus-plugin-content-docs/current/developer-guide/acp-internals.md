@@ -25,7 +25,7 @@ ACP 适配器将 Hermes 的同步 `AIAgent` 封装为异步 JSON-RPC stdio 服�
 hermes acp / hermes-acp / python -m acp_adapter
   -> acp_adapter.entry.main()
   -> parse --version / --check / --setup before server startup
-  -> load ~/.hermes/.env
+  -> load ~/.devascent/.env
   -> configure stderr logging
   -> construct HermesACPAgent
   -> acp.run_agent(agent, use_unstable_protocol=True)
@@ -147,7 +147,7 @@ ACP 不实现自己的认证存储。
 而是复用 Hermes 的运行时解析器：
 
 - `acp_adapter/auth.py`
-- `hermes_cli/runtime_provider.py`
+- `devascent_cli/runtime_provider.py`
 
 因此 ACP 通告并使用当前配置的 Hermes provider/凭据。它还始终通告一个终端 setup 认证方法（`hermes-setup`，参数 `--setup`），以便首次运行的 registry 客户端在启动正常 ACP 会话前可以打开 Hermes 的交互式模型/provider 配置。
 
@@ -172,7 +172,7 @@ ACP 在 prompt 执行期间临时在终端工具上安装审批回调，执行�
 
 ## 当前限制
 
-- ACP 会话持久化至共享的 `~/.hermes/state.db`（SessionDB），在进程重启后透明恢复；它们会出现在 `session_search` 中
+- ACP 会话持久化至共享的 `~/.devascent/state.db`（SessionDB），在进程重启后透明恢复；它们会出现在 `session_search` 中
 - 非文本 prompt 块在请求文本提取时当前被忽略
 - 编辑器特定的 UX 因 ACP 客户端实现而异
 
@@ -180,5 +180,5 @@ ACP 在 prompt 执行期间临时在终端工具上安装审批回调，执行�
 
 - `tests/acp/` — ACP 测试套件
 - `toolsets.py` — `hermes-acp` toolset 定义
-- `hermes_cli/main.py` — `hermes acp` CLI 子命令
+- `devascent_cli/main.py` — `hermes acp` CLI 子命令
 - `pyproject.toml` — `[acp]` 可选依赖 + `hermes-acp` 脚本

@@ -31,9 +31,9 @@ class HermesAgent < Formula
 
       (bin/exe).write_env_script(
         libexec/"bin"/exe,
-        HERMES_BUNDLED_SKILLS: pkgshare/"skills",
-        HERMES_OPTIONAL_SKILLS: pkgshare/"optional-skills",
-        HERMES_MANAGED: "homebrew"
+        DEVASCENT_BUNDLED_SKILLS: pkgshare/"skills",
+        DEVASCENT_OPTIONAL_SKILLS: pkgshare/"optional-skills",
+        DEVASCENT_MANAGED: "homebrew"
       )
     end
   end

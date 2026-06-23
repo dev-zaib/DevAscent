@@ -10,7 +10,7 @@ from pathlib import Path
 import httpx
 import pytest
 
-from hermes_cli.auth import AuthError, get_provider_auth_state, resolve_nous_runtime_credentials
+from devascent_cli.auth import AuthError, get_provider_auth_state, resolve_nous_runtime_credentials
 
 
 # =============================================================================
@@ -28,7 +28,7 @@ class TestResolveVerifyFallback:
         monkeypatch.setattr("sys.platform", "linux")
 
     def test_missing_ca_bundle_in_auth_state_falls_back(self):
-        from hermes_cli.auth import _resolve_verify
+        from devascent_cli.auth import _resolve_verify
 
         result = _resolve_verify(auth_state={
             "tls": {"insecure": False, "ca_bundle": "/nonexistent/ca-bundle.pem"},
@@ -37,7 +37,7 @@ class TestResolveVerifyFallback:
 
     def test_valid_ca_bundle_in_auth_state_is_returned(self, tmp_path, monkeypatch):
         import ssl
-        from hermes_cli.auth import _resolve_verify
+        from devascent_cli.auth import _resolve_verify
 
         ca_file = tmp_path / "ca-bundle.pem"
         ca_file.write_text("fake cert")
@@ -54,23 +54,23 @@ class TestResolveVerifyFallback:
         )
 
     def test_missing_ssl_cert_file_env_falls_back(self, monkeypatch):
-        from hermes_cli.auth import _resolve_verify
+        from devascent_cli.auth import _resolve_verify
 
         monkeypatch.setenv("SSL_CERT_FILE", "/nonexistent/ssl-cert.pem")
-        monkeypatch.delenv("HERMES_CA_BUNDLE", raising=False)
+        monkeypatch.delenv("DEVASCENT_CA_BUNDLE", raising=False)
         result = _resolve_verify(auth_state={"tls": {}})
         assert result is True
 
     def test_missing_hermes_ca_bundle_env_falls_back(self, monkeypatch):
-        from hermes_cli.auth import _resolve_verify
+        from devascent_cli.auth import _resolve_verify
 
-        monkeypatch.setenv("HERMES_CA_BUNDLE", "/nonexistent/hermes-ca.pem")
+        monkeypatch.setenv("DEVASCENT_CA_BUNDLE", "/nonexistent/hermes-ca.pem")
         monkeypatch.delenv("SSL_CERT_FILE", raising=False)
         result = _resolve_verify(auth_state={"tls": {}})
         assert result is True
 
     def test_insecure_takes_precedence_over_missing_ca(self):
-        from hermes_cli.auth import _resolve_verify
+        from devascent_cli.auth import _resolve_verify
 
         result = _resolve_verify(
             insecure=True,
@@ -80,35 +80,35 @@ class TestResolveVerifyFallback:
 
     def test_string_false_in_auth_state_does_not_disable_tls_verify(self):
         import ssl
-        from hermes_cli.auth import _resolve_verify
+        from devascent_cli.auth import _resolve_verify
 
         result = _resolve_verify(auth_state={"tls": {"insecure": "false"}})
         assert result is not False
         assert result is True or isinstance(result, ssl.SSLContext)
 
     def test_string_true_in_auth_state_disables_tls_verify(self):
-        from hermes_cli.auth import _resolve_verify
+        from devascent_cli.auth import _resolve_verify
 
         result = _resolve_verify(auth_state={"tls": {"insecure": "true"}})
         assert result is False
 
     def test_no_ca_bundle_returns_true(self, monkeypatch):
-        from hermes_cli.auth import _resolve_verify
+        from devascent_cli.auth import _resolve_verify
 
-        monkeypatch.delenv("HERMES_CA_BUNDLE", raising=False)
+        monkeypatch.delenv("DEVASCENT_CA_BUNDLE", raising=False)
         monkeypatch.delenv("SSL_CERT_FILE", raising=False)
         result = _resolve_verify(auth_state={"tls": {}})
         assert result is True
 
     def test_explicit_ca_bundle_param_missing_falls_back(self):
-        from hermes_cli.auth import _resolve_verify
+        from devascent_cli.auth import _resolve_verify
 
         result = _resolve_verify(ca_bundle="/nonexistent/explicit-ca.pem")
         assert result is True
 
     def test_explicit_ca_bundle_param_valid_is_returned(self, tmp_path, monkeypatch):
         import ssl
-        from hermes_cli.auth import _resolve_verify
+        from devascent_cli.auth import _resolve_verify
 
         ca_file = tmp_path / "explicit-ca.pem"
         ca_file.write_text("fake cert")
@@ -187,7 +187,7 @@ def test_resolve_nous_runtime_credentials_prefers_invoke_jwt_and_mirrors(
     tmp_path,
     monkeypatch,
 ):
-    import hermes_cli.auth as auth_mod
+    import devascent_cli.auth as auth_mod
 
     hermes_home = tmp_path / "hermes"
     token = _invoke_jwt(seconds=3600)
@@ -198,7 +198,7 @@ def test_resolve_nous_runtime_credentials_prefers_invoke_jwt_and_mirrors(
         expires_at=_future_iso(3600),
         expires_in=3600,
     )
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
 
     creds = auth_mod.resolve_nous_runtime_credentials()
 
@@ -221,7 +221,7 @@ def test_resolve_nous_runtime_credentials_invoke_jwt_is_idempotent(
     tmp_path,
     monkeypatch,
 ):
-    import hermes_cli.auth as auth_mod
+    import devascent_cli.auth as auth_mod
 
     hermes_home = tmp_path / "hermes"
     hermes_home.mkdir(parents=True, exist_ok=True)
@@ -262,7 +262,7 @@ def test_resolve_nous_runtime_credentials_invoke_jwt_is_idempotent(
     auth_path.write_text(json.dumps(auth_store, indent=2))
     before_content = auth_path.read_text()
     before_mtime = auth_path.stat().st_mtime_ns
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
 
     def _unexpected_shared_write(*args, **kwargs):
         raise AssertionError("unchanged invoke JWT resolution should not sync shared store")
@@ -294,7 +294,7 @@ def test_resolve_nous_runtime_credentials_trusts_invoke_jwt_exp_over_stale_metad
     tmp_path,
     monkeypatch,
 ):
-    import hermes_cli.auth as auth_mod
+    import devascent_cli.auth as auth_mod
 
     hermes_home = tmp_path / "hermes"
     token = _invoke_jwt(seconds=3600)
@@ -307,7 +307,7 @@ def test_resolve_nous_runtime_credentials_trusts_invoke_jwt_exp_over_stale_metad
         agent_key=token,
         agent_key_expires_at="2000-01-01T00:00:00+00:00",
     )
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
 
     def _unexpected_refresh(*args, **kwargs):
         raise AssertionError("valid invoke JWT should not be refreshed because metadata is stale")
@@ -329,7 +329,7 @@ def test_resolve_nous_runtime_credentials_does_not_apply_agent_key_ttl_to_invoke
     tmp_path,
     monkeypatch,
 ):
-    import hermes_cli.auth as auth_mod
+    import devascent_cli.auth as auth_mod
 
     hermes_home = tmp_path / "hermes"
     token = _invoke_jwt(seconds=900)
@@ -340,7 +340,7 @@ def test_resolve_nous_runtime_credentials_does_not_apply_agent_key_ttl_to_invoke
         expires_at=_future_iso(900),
         expires_in=900,
     )
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
 
     creds = auth_mod.resolve_nous_runtime_credentials()
 
@@ -355,7 +355,7 @@ def test_resolve_nous_runtime_credentials_refreshes_legacy_agent_key_to_invoke_j
     tmp_path,
     monkeypatch,
 ):
-    import hermes_cli.auth as auth_mod
+    import devascent_cli.auth as auth_mod
 
     hermes_home = tmp_path / "hermes"
     refreshed_token = _invoke_jwt(seconds=3600)
@@ -369,7 +369,7 @@ def test_resolve_nous_runtime_credentials_refreshes_legacy_agent_key_to_invoke_j
         agent_key="legacy-opaque-session-key",
         agent_key_expires_at=_future_iso(3600),
     )
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
 
     refresh_calls = []
 
@@ -404,7 +404,7 @@ def test_resolve_nous_runtime_credentials_reauths_when_invoke_scope_missing(
     tmp_path,
     monkeypatch,
 ):
-    import hermes_cli.auth as auth_mod
+    import devascent_cli.auth as auth_mod
 
     hermes_home = tmp_path / "hermes"
     token = _jwt_with_claims({
@@ -420,7 +420,7 @@ def test_resolve_nous_runtime_credentials_reauths_when_invoke_scope_missing(
         expires_at=_future_iso(3600),
         expires_in=3600,
     )
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
 
     with pytest.raises(AuthError) as exc:
         auth_mod.resolve_nous_runtime_credentials()
@@ -433,7 +433,7 @@ def test_resolve_nous_runtime_credentials_reauths_when_invoke_scope_missing(
 
 
 def test_nous_device_code_login_does_not_retry_legacy_scope_when_invoke_refused(monkeypatch):
-    import hermes_cli.auth as auth_mod
+    import devascent_cli.auth as auth_mod
 
     scopes = []
 
@@ -465,7 +465,7 @@ def test_nous_device_code_login_does_not_retry_legacy_scope_when_invoke_refused(
 
 
 def test_removed_legacy_session_env_var_does_not_change_jwt_auth(tmp_path, monkeypatch):
-    import hermes_cli.auth as auth_mod
+    import devascent_cli.auth as auth_mod
 
     hermes_home = tmp_path / "hermes"
     token = _invoke_jwt(seconds=3600)
@@ -476,8 +476,8 @@ def test_removed_legacy_session_env_var_does_not_change_jwt_auth(tmp_path, monke
         expires_at=_future_iso(3600),
         expires_in=3600,
     )
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-    monkeypatch.setenv("HERMES_AGENT_USE_LEGACY_SESSION_KEYS", "true")
+    monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
+    monkeypatch.setenv("DEVASCENT_AGENT_USE_LEGACY_SESSION_KEYS", "true")
 
     creds = auth_mod.resolve_nous_runtime_credentials()
 
@@ -528,7 +528,7 @@ def test_nous_inference_auth_logs_do_not_include_secret_values(
     monkeypatch,
     caplog,
 ):
-    import hermes_cli.auth as auth_mod
+    import devascent_cli.auth as auth_mod
 
     hermes_home = tmp_path / "hermes"
     token = _invoke_jwt(seconds=3600)
@@ -542,7 +542,7 @@ def test_nous_inference_auth_logs_do_not_include_secret_values(
         expires_at=_future_iso(3600),
         expires_in=3600,
     )
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
 
     def _fake_refresh_access_token(*, client, portal_base_url, client_id, refresh_token):
         del client, portal_base_url, client_id, refresh_token
@@ -556,7 +556,7 @@ def test_nous_inference_auth_logs_do_not_include_secret_values(
 
     monkeypatch.setattr(auth_mod, "_refresh_access_token", _fake_refresh_access_token)
 
-    caplog.set_level(logging.INFO, logger="hermes_cli.auth")
+    caplog.set_level(logging.INFO, logger="devascent_cli.auth")
     auth_mod.resolve_nous_runtime_credentials(
         force_refresh=True,
     )
@@ -574,7 +574,7 @@ def test_get_nous_auth_status_checks_credential_pool(tmp_path, monkeypatch):
     case when login happened via the dashboard device-code flow which
     saves to the pool only.
     """
-    from hermes_cli.auth import get_nous_auth_status
+    from devascent_cli.auth import get_nous_auth_status
 
     hermes_home = tmp_path / "hermes"
     hermes_home.mkdir(parents=True, exist_ok=True)
@@ -582,7 +582,7 @@ def test_get_nous_auth_status_checks_credential_pool(tmp_path, monkeypatch):
     (hermes_home / "auth.json").write_text(json.dumps({
         "version": 1, "providers": {},
     }))
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
 
     # Seed the credential pool with a Nous entry
     from agent.credential_pool import PooledCredential, load_pool
@@ -610,14 +610,14 @@ def test_get_nous_auth_status_checks_credential_pool(tmp_path, monkeypatch):
 
 
 def test_get_nous_auth_status_pool_opaque_key_is_not_inference_credential(tmp_path, monkeypatch):
-    from hermes_cli.auth import get_nous_auth_status, invalidate_nous_auth_status_cache
+    from devascent_cli.auth import get_nous_auth_status, invalidate_nous_auth_status_cache
 
     hermes_home = tmp_path / "hermes"
     hermes_home.mkdir(parents=True, exist_ok=True)
     (hermes_home / "auth.json").write_text(json.dumps({
         "version": 1, "providers": {},
     }))
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
     invalidate_nous_auth_status_cache()
 
     from agent.credential_pool import PooledCredential, load_pool
@@ -649,13 +649,13 @@ def test_get_nous_auth_status_auth_store_fallback(tmp_path, monkeypatch):
     """get_nous_auth_status() falls back to auth store when credential
     pool is empty.
     """
-    from hermes_cli.auth import get_nous_auth_status
+    from devascent_cli.auth import get_nous_auth_status
 
     hermes_home = tmp_path / "hermes"
     _setup_nous_auth(hermes_home, access_token="at-123")
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
     monkeypatch.setattr(
-        "hermes_cli.auth.resolve_nous_runtime_credentials",
+        "devascent_cli.auth.resolve_nous_runtime_credentials",
         lambda **kwargs: {
             "base_url": "https://inference.example.com/v1",
             "expires_at": "2099-01-01T00:00:00+00:00",
@@ -670,12 +670,12 @@ def test_get_nous_auth_status_auth_store_fallback(tmp_path, monkeypatch):
 
 
 def test_get_nous_auth_status_prefers_runtime_auth_store_over_stale_pool(tmp_path, monkeypatch):
-    from hermes_cli.auth import get_nous_auth_status
+    from devascent_cli.auth import get_nous_auth_status
     from agent.credential_pool import PooledCredential, load_pool
 
     hermes_home = tmp_path / "hermes"
     _setup_nous_auth(hermes_home, access_token="at-fresh")
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
 
     pool = load_pool("nous")
     stale = PooledCredential.from_dict("nous", {
@@ -695,7 +695,7 @@ def test_get_nous_auth_status_prefers_runtime_auth_store_over_stale_pool(tmp_pat
     pool.add_entry(stale)
 
     monkeypatch.setattr(
-        "hermes_cli.auth.resolve_nous_runtime_credentials",
+        "devascent_cli.auth.resolve_nous_runtime_credentials",
         lambda **kwargs: {
             "base_url": "https://inference.example.com/v1",
             "expires_at": "2099-01-01T00:00:00+00:00",
@@ -712,16 +712,16 @@ def test_get_nous_auth_status_prefers_runtime_auth_store_over_stale_pool(tmp_pat
 
 
 def test_get_nous_auth_status_reports_revoked_refresh_session(tmp_path, monkeypatch):
-    from hermes_cli.auth import get_nous_auth_status
+    from devascent_cli.auth import get_nous_auth_status
 
     hermes_home = tmp_path / "hermes"
     _setup_nous_auth(hermes_home, access_token="at-123")
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
 
     def _boom(**kwargs):
         raise AuthError("Refresh session has been revoked", provider="nous", relogin_required=True)
 
-    monkeypatch.setattr("hermes_cli.auth.resolve_nous_runtime_credentials", _boom)
+    monkeypatch.setattr("devascent_cli.auth.resolve_nous_runtime_credentials", _boom)
 
     status = get_nous_auth_status()
     assert status["logged_in"] is False
@@ -734,14 +734,14 @@ def test_get_nous_auth_status_empty_returns_not_logged_in(tmp_path, monkeypatch)
     """get_nous_auth_status() returns logged_in=False when both pool
     and auth store are empty.
     """
-    from hermes_cli.auth import get_nous_auth_status
+    from devascent_cli.auth import get_nous_auth_status
 
     hermes_home = tmp_path / "hermes"
     hermes_home.mkdir(parents=True, exist_ok=True)
     (hermes_home / "auth.json").write_text(json.dumps({
         "version": 1, "providers": {},
     }))
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
 
     status = get_nous_auth_status()
     assert status["logged_in"] is False
@@ -754,7 +754,7 @@ def test_refresh_token_persisted_when_refreshed_jwt_lacks_invoke_scope(tmp_path,
         access_token="access-old",
         refresh_token="refresh-old",
     )
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
 
     refresh_calls = []
     bad_jwt = _jwt_with_claims({
@@ -778,7 +778,7 @@ def test_refresh_token_persisted_when_refreshed_jwt_lacks_invoke_scope(tmp_path,
             "scope": "profile" if len(refresh_calls) == 1 else "inference:invoke",
         }
 
-    monkeypatch.setattr("hermes_cli.auth._refresh_access_token", _fake_refresh_access_token)
+    monkeypatch.setattr("devascent_cli.auth._refresh_access_token", _fake_refresh_access_token)
 
     with pytest.raises(AuthError) as exc:
         resolve_nous_runtime_credentials()
@@ -801,7 +801,7 @@ def test_refresh_token_persisted_when_refreshed_token_is_not_jwt(tmp_path, monke
         access_token="access-old",
         refresh_token="refresh-old",
     )
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
 
     def _fake_refresh_access_token(*, client, portal_base_url, client_id, refresh_token):
         return {
@@ -811,7 +811,7 @@ def test_refresh_token_persisted_when_refreshed_token_is_not_jwt(tmp_path, monke
             "token_type": "Bearer",
         }
 
-    monkeypatch.setattr("hermes_cli.auth._refresh_access_token", _fake_refresh_access_token)
+    monkeypatch.setattr("devascent_cli.auth._refresh_access_token", _fake_refresh_access_token)
 
     with pytest.raises(AuthError) as exc:
         resolve_nous_runtime_credentials()
@@ -827,7 +827,7 @@ def test_terminal_refresh_failure_quarantines_tokens(
     tmp_path, monkeypatch, shared_store_env,
 ):
     """A revoked/invalid Nous refresh token must not be replayed forever."""
-    from hermes_cli import auth as auth_mod
+    from devascent_cli import auth as auth_mod
 
     hermes_home = tmp_path / "hermes"
     _setup_nous_auth(
@@ -835,7 +835,7 @@ def test_terminal_refresh_failure_quarantines_tokens(
         access_token="access-old",
         refresh_token="refresh-old",
     )
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
     from agent.credential_pool import load_pool
 
     assert load_pool("nous").select() is not None
@@ -881,11 +881,11 @@ def test_terminal_refresh_failure_quarantines_tokens(
 def test_managed_access_token_refresh_failure_quarantines_tokens(
     tmp_path, monkeypatch, shared_store_env,
 ):
-    from hermes_cli import auth as auth_mod
+    from devascent_cli import auth as auth_mod
 
     hermes_home = tmp_path / "hermes"
     _setup_nous_auth(hermes_home, refresh_token="refresh-old")
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
     from agent.credential_pool import load_pool
 
     assert load_pool("nous").select() is not None
@@ -927,7 +927,7 @@ def test_unusable_access_token_refresh_uses_latest_rotated_refresh_token(tmp_pat
         access_token="access-old",
         refresh_token="refresh-old",
     )
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
 
     refresh_calls = []
     good_jwt = _invoke_jwt(seconds=3600)
@@ -943,7 +943,7 @@ def test_unusable_access_token_refresh_uses_latest_rotated_refresh_token(tmp_pat
             "scope": "inference:invoke",
         }
 
-    monkeypatch.setattr("hermes_cli.auth._refresh_access_token", _fake_refresh_access_token)
+    monkeypatch.setattr("devascent_cli.auth._refresh_access_token", _fake_refresh_access_token)
 
     with pytest.raises(AuthError) as exc:
         resolve_nous_runtime_credentials()
@@ -972,7 +972,7 @@ class TestLoginNousSkipKeepsCurrent:
         import yaml
         hermes_home = tmp_path / "hermes"
         hermes_home.mkdir(parents=True, exist_ok=True)
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
 
         config_path = hermes_home / "config.yaml"
         config_path.write_text(yaml.safe_dump({
@@ -992,9 +992,9 @@ class TestLoginNousSkipKeepsCurrent:
 
     def _patch_login_internals(self, monkeypatch, *, prompt_returns):
         """Patch OAuth + model-list + prompt so _login_nous doesn't hit network."""
-        import hermes_cli.auth as auth_mod
-        import hermes_cli.models as models_mod
-        import hermes_cli.nous_subscription as ns
+        import devascent_cli.auth as auth_mod
+        import devascent_cli.models as models_mod
+        import devascent_cli.nous_subscription as ns
 
         fake_auth_state = {
             "access_token": "fake-nous-token",
@@ -1031,7 +1031,7 @@ class TestLoginNousSkipKeepsCurrent:
         """User picks Skip → config.yaml untouched, Nous creds still saved."""
         import argparse
         import yaml
-        from hermes_cli.auth import PROVIDER_REGISTRY, _login_nous
+        from devascent_cli.auth import PROVIDER_REGISTRY, _login_nous
 
         hermes_home, config_path, auth_path = self._setup_home_with_openrouter(
             tmp_path, monkeypatch,
@@ -1062,7 +1062,7 @@ class TestLoginNousSkipKeepsCurrent:
         """User picks a Nous model → provider flips to nous with that model."""
         import argparse
         import yaml
-        from hermes_cli.auth import PROVIDER_REGISTRY, _login_nous
+        from devascent_cli.auth import PROVIDER_REGISTRY, _login_nous
 
         hermes_home, config_path, auth_path = self._setup_home_with_openrouter(
             tmp_path, monkeypatch,
@@ -1090,11 +1090,11 @@ class TestLoginNousSkipKeepsCurrent:
         instead of leaving it as nous."""
         import argparse
         import yaml
-        from hermes_cli.auth import PROVIDER_REGISTRY, _login_nous
+        from devascent_cli.auth import PROVIDER_REGISTRY, _login_nous
 
         hermes_home = tmp_path / "hermes"
         hermes_home.mkdir(parents=True, exist_ok=True)
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
 
         config_path = hermes_home / "config.yaml"
         config_path.write_text(yaml.safe_dump({"model": {}}, sort_keys=False))
@@ -1157,14 +1157,14 @@ def test_persist_nous_credentials_writes_both_pool_and_providers(tmp_path, monke
     agent failed with "Non-retryable client error". Both stores must stay
     in sync at write time.
     """
-    from hermes_cli.auth import persist_nous_credentials, NOUS_DEVICE_CODE_SOURCE
+    from devascent_cli.auth import persist_nous_credentials, NOUS_DEVICE_CODE_SOURCE
 
     hermes_home = tmp_path / "hermes"
     hermes_home.mkdir(parents=True, exist_ok=True)
     (hermes_home / "auth.json").write_text(json.dumps({
         "version": 1, "providers": {},
     }))
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
 
     state = _full_state_fixture()
     entry = persist_nous_credentials(state)
@@ -1199,7 +1199,7 @@ def test_persist_nous_credentials_allows_recovery_from_401(tmp_path, monkeypatch
     calls after a Nous 401 — before the fix it would raise AuthError because
     providers.nous was empty.
     """
-    from hermes_cli.auth import (
+    from devascent_cli.auth import (
         persist_nous_credentials,
         resolve_nous_runtime_credentials,
     )
@@ -1209,7 +1209,7 @@ def test_persist_nous_credentials_allows_recovery_from_401(tmp_path, monkeypatch
     (hermes_home / "auth.json").write_text(json.dumps({
         "version": 1, "providers": {},
     }))
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
 
     persist_nous_credentials(_full_state_fixture())
     new_jwt = _invoke_jwt(seconds=3600)
@@ -1226,7 +1226,7 @@ def test_persist_nous_credentials_allows_recovery_from_401(tmp_path, monkeypatch
             "scope": "inference:invoke",
         }
 
-    monkeypatch.setattr("hermes_cli.auth._refresh_access_token", _fake_refresh_access_token)
+    monkeypatch.setattr("devascent_cli.auth._refresh_access_token", _fake_refresh_access_token)
 
     creds = resolve_nous_runtime_credentials(
         force_refresh=True,
@@ -1244,14 +1244,14 @@ def test_persist_nous_credentials_idempotent_no_duplicate_pool_entries(tmp_path,
     materialise the pool entry under the canonical ``device_code`` source, so
     two persists still leave the pool with exactly one row.
     """
-    from hermes_cli.auth import persist_nous_credentials, NOUS_DEVICE_CODE_SOURCE
+    from devascent_cli.auth import persist_nous_credentials, NOUS_DEVICE_CODE_SOURCE
 
     hermes_home = tmp_path / "hermes"
     hermes_home.mkdir(parents=True, exist_ok=True)
     (hermes_home / "auth.json").write_text(json.dumps({
         "version": 1, "providers": {},
     }))
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
 
     first = _full_state_fixture()
     persist_nous_credentials(first)
@@ -1285,14 +1285,14 @@ def test_persist_nous_credentials_reloads_pool_after_singleton_write(tmp_path, m
     callers observe the canonical seeded state, including any legacy entries
     that ``_seed_from_singletons`` pruned or upserted.
     """
-    from hermes_cli.auth import persist_nous_credentials, NOUS_DEVICE_CODE_SOURCE
+    from devascent_cli.auth import persist_nous_credentials, NOUS_DEVICE_CODE_SOURCE
 
     hermes_home = tmp_path / "hermes"
     hermes_home.mkdir(parents=True, exist_ok=True)
     (hermes_home / "auth.json").write_text(json.dumps({
         "version": 1, "providers": {},
     }))
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
 
     state = _full_state_fixture()
     entry = persist_nous_credentials(state)
@@ -1312,14 +1312,14 @@ def test_persist_nous_credentials_embeds_custom_label(tmp_path, monkeypatch):
     _seed_from_singletons always auto-derived via label_from_token().  The
     fix stashes the label inside providers.nous so seeding prefers it.
     """
-    from hermes_cli.auth import persist_nous_credentials, NOUS_DEVICE_CODE_SOURCE
+    from devascent_cli.auth import persist_nous_credentials, NOUS_DEVICE_CODE_SOURCE
 
     hermes_home = tmp_path / "hermes"
     hermes_home.mkdir(parents=True, exist_ok=True)
     (hermes_home / "auth.json").write_text(json.dumps({
         "version": 1, "providers": {},
     }))
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
 
     entry = persist_nous_credentials(_full_state_fixture(), label="my-personal")
     assert entry is not None
@@ -1336,7 +1336,7 @@ def test_persist_nous_credentials_custom_label_survives_reseed(tmp_path, monkeyp
     """Reopening the pool (which re-runs _seed_from_singletons) must keep the
     user-chosen label instead of clobbering it with label_from_token output.
     """
-    from hermes_cli.auth import persist_nous_credentials
+    from devascent_cli.auth import persist_nous_credentials
     from agent.credential_pool import load_pool
 
     hermes_home = tmp_path / "hermes"
@@ -1344,7 +1344,7 @@ def test_persist_nous_credentials_custom_label_survives_reseed(tmp_path, monkeyp
     (hermes_home / "auth.json").write_text(json.dumps({
         "version": 1, "providers": {},
     }))
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
 
     persist_nous_credentials(_full_state_fixture(), label="work-acct")
 
@@ -1360,14 +1360,14 @@ def test_persist_nous_credentials_no_label_uses_auto_derived(tmp_path, monkeypat
     """When the caller doesn't pass ``label``, the auto-derived fingerprint
     is used (unchanged default behaviour — regression guard).
     """
-    from hermes_cli.auth import persist_nous_credentials
+    from devascent_cli.auth import persist_nous_credentials
 
     hermes_home = tmp_path / "hermes"
     hermes_home.mkdir(parents=True, exist_ok=True)
     (hermes_home / "auth.json").write_text(json.dumps({
         "version": 1, "providers": {},
     }))
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
 
     entry = persist_nous_credentials(_full_state_fixture())
     assert entry is not None
@@ -1393,7 +1393,7 @@ def test_refresh_token_reuse_detection_surfaces_actionable_message():
     bug when the true cause is external RT consumption (monitoring scripts,
     custom self-heal hooks).
     """
-    from hermes_cli.auth import _refresh_access_token
+    from devascent_cli.auth import _refresh_access_token
 
     class _FakeResponse:
         status_code = 400
@@ -1428,7 +1428,7 @@ def test_refresh_token_reuse_detection_surfaces_actionable_message():
 
 def test_refresh_token_reuse_error_code_is_terminal():
     """Nous may return refresh_token_reused as the OAuth error code itself."""
-    from hermes_cli import auth as auth_mod
+    from devascent_cli import auth as auth_mod
 
     class _FakeResponse:
         status_code = 400
@@ -1460,7 +1460,7 @@ def test_refresh_token_exchange_sends_refresh_token_header():
     """Nous refresh tokens must be sent in a header so sandbox proxies can
     substitute placeholder credentials without parsing form bodies.
     """
-    from hermes_cli.auth import _refresh_access_token
+    from devascent_cli.auth import _refresh_access_token
 
     class _FakeResponse:
         status_code = 200
@@ -1504,7 +1504,7 @@ def test_refresh_non_reuse_error_keeps_original_description():
     downstream consequence) keeps its original text so we don't overwrite
     useful server context for unrelated failure modes.
     """
-    from hermes_cli.auth import _refresh_access_token
+    from devascent_cli.auth import _refresh_access_token
 
     class _FakeResponse:
         status_code = 400
@@ -1539,7 +1539,7 @@ def test_refresh_non_reuse_error_keeps_original_description():
 
 @pytest.fixture
 def shared_store_env(tmp_path, monkeypatch):
-    """Redirect HERMES_SHARED_AUTH_DIR to a tmp_path.
+    """Redirect DEVASCENT_SHARED_AUTH_DIR to a tmp_path.
 
     Required for every test that exercises the shared Nous store — the
     in-auth.py seat belt refuses to touch the real user's shared store
@@ -1547,31 +1547,31 @@ def shared_store_env(tmp_path, monkeypatch):
     of corrupting real state.
     """
     shared_dir = tmp_path / "shared"
-    monkeypatch.setenv("HERMES_SHARED_AUTH_DIR", str(shared_dir))
+    monkeypatch.setenv("DEVASCENT_SHARED_AUTH_DIR", str(shared_dir))
     return shared_dir
 
 
 def test_shared_store_seat_belt_refuses_real_home_under_pytest(monkeypatch):
-    """Without HERMES_SHARED_AUTH_DIR override, the seat belt must trip.
+    """Without DEVASCENT_SHARED_AUTH_DIR override, the seat belt must trip.
 
     Mirrors the existing ``_auth_file_path`` seat belt: forgetting to
     redirect this store in a test must fail loudly instead of silently
-    writing to the user's real ``~/.hermes/shared/`` across CI runs.
+    writing to the user's real ``~/.devascent/shared/`` across CI runs.
     """
-    from hermes_cli.auth import _nous_shared_store_path
+    from devascent_cli.auth import _nous_shared_store_path
 
-    monkeypatch.delenv("HERMES_SHARED_AUTH_DIR", raising=False)
+    monkeypatch.delenv("DEVASCENT_SHARED_AUTH_DIR", raising=False)
 
     with pytest.raises(RuntimeError, match="shared Nous auth store"):
         _nous_shared_store_path()
 
 
 def test_shared_store_honors_env_override(tmp_path, monkeypatch):
-    """HERMES_SHARED_AUTH_DIR must redirect the path."""
-    from hermes_cli.auth import _nous_shared_store_path, NOUS_SHARED_STORE_FILENAME
+    """DEVASCENT_SHARED_AUTH_DIR must redirect the path."""
+    from devascent_cli.auth import _nous_shared_store_path, NOUS_SHARED_STORE_FILENAME
 
     custom_dir = tmp_path / "custom_shared"
-    monkeypatch.setenv("HERMES_SHARED_AUTH_DIR", str(custom_dir))
+    monkeypatch.setenv("DEVASCENT_SHARED_AUTH_DIR", str(custom_dir))
 
     path = _nous_shared_store_path()
     assert path == custom_dir / NOUS_SHARED_STORE_FILENAME
@@ -1579,14 +1579,14 @@ def test_shared_store_honors_env_override(tmp_path, monkeypatch):
 
 def test_shared_store_read_missing_returns_none(shared_store_env):
     """Missing file → ``_read_shared_nous_state()`` returns None."""
-    from hermes_cli.auth import _read_shared_nous_state
+    from devascent_cli.auth import _read_shared_nous_state
 
     assert _read_shared_nous_state() is None
 
 
 def test_shared_store_read_malformed_returns_none(shared_store_env):
     """Unreadable / non-JSON file → None, not an exception."""
-    from hermes_cli.auth import _nous_shared_store_path, _read_shared_nous_state
+    from devascent_cli.auth import _nous_shared_store_path, _read_shared_nous_state
 
     path = _nous_shared_store_path()
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -1597,7 +1597,7 @@ def test_shared_store_read_malformed_returns_none(shared_store_env):
 
 def test_shared_store_read_missing_required_fields_returns_none(shared_store_env):
     """Payload without refresh_token → None (nothing worth importing)."""
-    from hermes_cli.auth import _nous_shared_store_path, _read_shared_nous_state
+    from devascent_cli.auth import _nous_shared_store_path, _read_shared_nous_state
 
     path = _nous_shared_store_path()
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -1608,7 +1608,7 @@ def test_shared_store_read_missing_required_fields_returns_none(shared_store_env
 
 def test_shared_store_write_and_read_roundtrip(shared_store_env):
     """Write → read must preserve refresh_token + OAuth URLs."""
-    from hermes_cli.auth import (
+    from devascent_cli.auth import (
         _nous_shared_store_path,
         _read_shared_nous_state,
         _write_shared_nous_state,
@@ -1638,7 +1638,7 @@ def test_shared_store_write_and_read_roundtrip(shared_store_env):
 
 def test_shared_store_write_skips_when_refresh_token_missing(shared_store_env):
     """Write is a no-op when refresh_token is absent (nothing to share)."""
-    from hermes_cli.auth import _nous_shared_store_path, _write_shared_nous_state
+    from devascent_cli.auth import _nous_shared_store_path, _write_shared_nous_state
 
     state = dict(_full_state_fixture())
     state["refresh_token"] = ""
@@ -1655,7 +1655,7 @@ def test_persist_nous_credentials_mirrors_to_shared_store(
     AND the shared store, so a future profile's `hermes auth add nous
     --type oauth` can one-tap import instead of redoing device-code.
     """
-    from hermes_cli.auth import (
+    from devascent_cli.auth import (
         _nous_shared_store_path,
         _read_shared_nous_state,
         persist_nous_credentials,
@@ -1666,7 +1666,7 @@ def test_persist_nous_credentials_mirrors_to_shared_store(
     (hermes_home / "auth.json").write_text(
         json.dumps({"version": 1, "providers": {}})
     )
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
 
     persist_nous_credentials(_full_state_fixture())
 
@@ -1685,7 +1685,7 @@ def test_persist_nous_credentials_mirrors_to_shared_store(
 
 def test_try_import_shared_returns_none_when_store_missing(shared_store_env):
     """No shared store → no rehydrate (fall through to device-code)."""
-    from hermes_cli.auth import _try_import_shared_nous_state
+    from devascent_cli.auth import _try_import_shared_nous_state
 
     assert _try_import_shared_nous_state() is None
 
@@ -1697,7 +1697,7 @@ def test_try_import_shared_returns_none_on_refresh_failure(
     portal down), _try_import_shared_nous_state must return None so the
     login flow falls back to a fresh device-code run.
     """
-    from hermes_cli import auth as auth_mod
+    from devascent_cli import auth as auth_mod
 
     # Seed the shared store
     auth_mod._write_shared_nous_state(_full_state_fixture())
@@ -1726,7 +1726,7 @@ def test_try_import_shared_persists_rotated_token_when_jwt_validation_fails(
     rotated refresh token; otherwise the next import attempt replays the
     consumed token and trips refresh-token reuse.
     """
-    from hermes_cli import auth as auth_mod
+    from devascent_cli import auth as auth_mod
 
     shared_state = _full_state_fixture()
     shared_state["refresh_token"] = "refresh-old"
@@ -1757,7 +1757,7 @@ def test_try_import_shared_rehydrates_on_success(shared_store_env, monkeypatch):
     returns a fresh access_token JWT, and the returned dict has
     every field persist_nous_credentials() needs.
     """
-    from hermes_cli import auth as auth_mod
+    from devascent_cli import auth as auth_mod
 
     auth_mod._write_shared_nous_state(_full_state_fixture())
     fresh_jwt = _invoke_jwt(seconds=7200)
@@ -1790,10 +1790,10 @@ def test_shared_store_survives_across_profile_switch(
     tmp_path, monkeypatch, shared_store_env,
 ):
     """End-to-end: profile A logs in → shared store populated → profile B
-    (different HERMES_HOME) sees the same shared state and can rehydrate
+    (different DEVASCENT_HOME) sees the same shared state and can rehydrate
     without re-running device-code.
     """
-    from hermes_cli import auth as auth_mod
+    from devascent_cli import auth as auth_mod
 
     # Profile A: login, which mirrors to shared store
     profile_a = tmp_path / "profile_a"
@@ -1801,21 +1801,21 @@ def test_shared_store_survives_across_profile_switch(
     (profile_a / "auth.json").write_text(
         json.dumps({"version": 1, "providers": {}})
     )
-    monkeypatch.setenv("HERMES_HOME", str(profile_a))
+    monkeypatch.setenv("DEVASCENT_HOME", str(profile_a))
     auth_mod.persist_nous_credentials(_full_state_fixture())
 
     # Profile A's auth.json has nous
     a_payload = json.loads((profile_a / "auth.json").read_text())
     assert "nous" in a_payload.get("providers", {})
 
-    # Profile B: fresh HERMES_HOME, no auth yet, but the shared store
+    # Profile B: fresh DEVASCENT_HOME, no auth yet, but the shared store
     # persists — _read_shared_nous_state() must still return the tokens.
     profile_b = tmp_path / "profile_b"
     profile_b.mkdir(parents=True, exist_ok=True)
     (profile_b / "auth.json").write_text(
         json.dumps({"version": 1, "providers": {}})
     )
-    monkeypatch.setenv("HERMES_HOME", str(profile_b))
+    monkeypatch.setenv("DEVASCENT_HOME", str(profile_b))
 
     # B's own auth.json has no nous
     b_payload = json.loads((profile_b / "auth.json").read_text())
@@ -1864,7 +1864,7 @@ def test_runtime_refresh_uses_newer_shared_token_before_local_stale_token(
     can submit the stale local refresh token and trigger portal reuse
     revocation for the whole shared session.
     """
-    from hermes_cli import auth as auth_mod
+    from devascent_cli import auth as auth_mod
 
     profile_b = tmp_path / "profile_b"
     _setup_nous_auth(
@@ -1872,7 +1872,7 @@ def test_runtime_refresh_uses_newer_shared_token_before_local_stale_token(
         access_token="local-expired-access",
         refresh_token="local-stale-refresh",
     )
-    monkeypatch.setenv("HERMES_HOME", str(profile_b))
+    monkeypatch.setenv("DEVASCENT_HOME", str(profile_b))
 
     shared_state = _full_state_fixture()
     shared_token = _invoke_jwt(seconds=3600)
@@ -1901,7 +1901,7 @@ def test_managed_gateway_access_token_uses_newer_shared_token(
     tmp_path, monkeypatch, shared_store_env,
 ):
     """Managed-tool token reads share the same stale-refresh-token hazard."""
-    from hermes_cli import auth as auth_mod
+    from devascent_cli import auth as auth_mod
 
     profile_b = tmp_path / "profile_b"
     _setup_nous_auth(
@@ -1909,7 +1909,7 @@ def test_managed_gateway_access_token_uses_newer_shared_token(
         access_token="local-expired-access",
         refresh_token="local-stale-refresh",
     )
-    monkeypatch.setenv("HERMES_HOME", str(profile_b))
+    monkeypatch.setenv("DEVASCENT_HOME", str(profile_b))
 
     shared_state = _full_state_fixture()
     shared_state["access_token"] = "shared-fresh-access"

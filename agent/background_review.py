@@ -64,7 +64,7 @@ def _resolve_review_runtime(agent: Any) -> Dict[str, Any]:
         "routed": False,
     }
     try:
-        from hermes_cli.config import load_config
+        from devascent_cli.config import load_config
         cfg = load_config()
     except Exception:
         return parent
@@ -79,7 +79,7 @@ def _resolve_review_runtime(agent: Any) -> Dict[str, Any]:
     if task_provider == (agent.provider or "") and task_model == (agent.model or ""):
         return parent  # same model/provider as parent -> not routed
     try:
-        from hermes_cli.runtime_provider import resolve_runtime_provider
+        from devascent_cli.runtime_provider import resolve_runtime_provider
         rp = resolve_runtime_provider(
             requested=task_provider,
             target_model=task_model,
@@ -558,7 +558,7 @@ def build_memory_write_metadata(
         ),
         "session_id": agent.session_id or "",
         "parent_session_id": agent._parent_session_id or "",
-        "platform": agent.platform or os.environ.get("HERMES_SESSION_SOURCE", "cli"),
+        "platform": agent.platform or os.environ.get("DEVASCENT_SESSION_SOURCE", "cli"),
         "tool_name": "memory",
     }
     if task_id:
@@ -720,7 +720,7 @@ def _run_review_in_thread(
             review_agent.compression_enabled = False
 
             from model_tools import get_tool_definitions
-            from hermes_cli.plugins import (
+            from devascent_cli.plugins import (
                 set_thread_tool_whitelist,
                 clear_thread_tool_whitelist,
             )

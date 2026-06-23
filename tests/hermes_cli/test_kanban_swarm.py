@@ -1,6 +1,6 @@
 
-from hermes_cli import kanban_db as kb
-from hermes_cli.kanban_swarm import (
+from devascent_cli import kanban_db as kb
+from devascent_cli.kanban_swarm import (
     SwarmWorkerSpec,
     create_swarm,
     latest_blackboard,

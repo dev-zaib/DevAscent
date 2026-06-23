@@ -43,11 +43,11 @@ def hermes_home(tmp_path, monkeypatch):
     """Point Hermes at an isolated home directory."""
     home = tmp_path / ".hermes"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    # Some modules cache get_hermes_home; clear if needed.
-    import hermes_constants
-    if hasattr(hermes_constants, "_HERMES_HOME_CACHE"):
-        hermes_constants._HERMES_HOME_CACHE = None  # type: ignore[attr-defined]
+    monkeypatch.setenv("DEVASCENT_HOME", str(home))
+    # Some modules cache get_devascent_home; clear if needed.
+    import devascent_constants
+    if hasattr(devascent_constants, "_DEVASCENT_HOME_CACHE"):
+        devascent_constants._DEVASCENT_HOME_CACHE = None  # type: ignore[attr-defined]
     return home
 
 
@@ -613,10 +613,10 @@ def test_env_loader_skips_when_disabled(tmp_path, monkeypatch):
     """No config.yaml present → no BSM call, no crash."""
     home = tmp_path / ".hermes"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("DEVASCENT_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
-    from hermes_cli.env_loader import _apply_external_secret_sources
+    from devascent_cli.env_loader import _apply_external_secret_sources
     # Should be a no-op (returns None).
     assert _apply_external_secret_sources(home) is None
 
@@ -634,7 +634,7 @@ def test_env_loader_calls_bsm_when_enabled(tmp_path, monkeypatch):
         "    override_existing: false\n"
         "    auto_install: false\n"
     )
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("DEVASCENT_HOME", str(home))
     monkeypatch.setenv("BWS_ACCESS_TOKEN", "0.t")
     monkeypatch.delenv("MY_BSM_KEY", raising=False)
 
@@ -654,7 +654,7 @@ def test_env_loader_calls_bsm_when_enabled(tmp_path, monkeypatch):
         fake_apply,
     )
 
-    from hermes_cli.env_loader import _apply_external_secret_sources
+    from devascent_cli.env_loader import _apply_external_secret_sources
     _apply_external_secret_sources(home)
 
     assert called["n"] == 1

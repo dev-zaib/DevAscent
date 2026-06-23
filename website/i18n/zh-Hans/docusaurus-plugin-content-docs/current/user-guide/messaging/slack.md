@@ -33,7 +33,7 @@ description: "使用 Socket Mode 将 Hermes Agent 设置为 Slack 机器人"
    ```bash
    hermes slack manifest --write
    ```
-   此命令会将 `~/.hermes/slack-manifest.json` 写入磁盘并打印粘贴说明。
+   此命令会将 `~/.devascent/slack-manifest.json` 写入磁盘并打印粘贴说明。
 2. 前往 [https://api.slack.com/apps](https://api.slack.com/apps) →
    **Create New App** → **From an app manifest**
 3. 选择你的工作区，粘贴 JSON 内容，检查后点击 **Next** → **Create**
@@ -168,7 +168,7 @@ Member ID 格式类似 `U01ABC2DEF3`。你至少需要自己的 Member ID。
 
 ## 第八步：配置 Hermes
 
-将以下内容添加到你的 `~/.hermes/.env` 文件：
+将以下内容添加到你的 `~/.devascent/.env` 文件：
 
 ```bash
 # 必需
@@ -213,7 +213,7 @@ sudo hermes gateway install --system   # 仅 Linux：开机启动系统服务
 
 每个 Hermes 命令（`/btw`、`/stop`、`/new`、`/model`、`/help`……）都是原生 Slack 斜杠命令——与它们在 Telegram 和 Discord 上的工作方式完全相同。在 Slack 中输入 `/`，自动补全选择器会列出每个 Hermes 命令及其描述。
 
-底层实现：Hermes 附带一个生成的 Slack 应用 manifest（见第一步，方式 A），它将 [`COMMAND_REGISTRY`](https://github.com/NousResearch/hermes-agent/blob/main/hermes_cli/commands.py) 中的每个命令声明为斜杠命令。在 Socket Mode 下，无论 manifest 的 `url` 字段如何，Slack 都会通过 WebSocket 路由命令事件。
+底层实现：Hermes 附带一个生成的 Slack 应用 manifest（见第一步，方式 A），它将 [`COMMAND_REGISTRY`](https://github.com/NousResearch/hermes-agent/blob/main/devascent_cli/commands.py) 中的每个命令声明为斜杠命令。在 Socket Mode 下，无论 manifest 的 `url` 字段如何，Slack 都会通过 WebSocket 路由命令事件。
 
 ### 更新后刷新斜杠命令
 
@@ -227,7 +227,7 @@ hermes slack manifest --write
 1. 打开 [https://api.slack.com/apps](https://api.slack.com/apps) →
    你的 Hermes 应用
 2. **Features → App Manifest → Edit**
-3. 粘贴 `~/.hermes/slack-manifest.json` 的新内容
+3. 粘贴 `~/.devascent/slack-manifest.json` 的新内容
 4. **保存**。如果权限范围或斜杠命令有变化，Slack 会提示重新安装应用。
 
 ### 旧版 `/hermes <子命令>` 仍然有效
@@ -272,7 +272,7 @@ hermes slack manifest --slashes-only > /tmp/slashes.json
 
 ## 配置选项
 
-除了第八步中的必需环境变量外，你还可以通过 `~/.hermes/config.yaml` 自定义 Slack 机器人行为。
+除了第八步中的必需环境变量外，你还可以通过 `~/.devascent/config.yaml` 自定义 Slack 机器人行为。
 
 ### 话题与回复行为
 
@@ -458,7 +458,7 @@ SLACK_BOT_TOKEN=xoxb-workspace1-token,xoxb-workspace2-token,xoxb-workspace3-toke
 SLACK_APP_TOKEN=xapp-your-app-token
 ```
 
-或在 `~/.hermes/config.yaml` 中：
+或在 `~/.devascent/config.yaml` 中：
 
 ```yaml
 platforms:
@@ -471,7 +471,7 @@ platforms:
 除了环境变量或配置中的 token 外，Hermes 还会从以下位置的 **OAuth token 文件**加载 token：
 
 ```
-~/.hermes/slack_tokens.json
+~/.devascent/slack_tokens.json
 ```
 
 此文件是一个将团队 ID 映射到 token 条目的 JSON 对象：
@@ -587,7 +587,7 @@ slack:
 **始终设置 `SLACK_ALLOWED_USERS`**，填入授权用户的 Member ID。没有此设置，gateway 默认会**拒绝所有消息**作为安全措施。切勿分享你的 bot token——像密码一样对待它们。
 :::
 
-- Token 应存储在 `~/.hermes/.env` 中（文件权限 `600`）
+- Token 应存储在 `~/.devascent/.env` 中（文件权限 `600`）
 - 定期通过 Slack 应用设置轮换 token
 - 审计谁有权访问你的 Hermes 配置目录
 - Socket Mode 意味着不暴露公开端点——减少一个攻击面

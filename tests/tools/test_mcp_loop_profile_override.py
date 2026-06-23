@@ -1,10 +1,10 @@
-"""Regression tests for HERMES_HOME override propagation onto the MCP loop.
+"""Regression tests for DEVASCENT_HOME override propagation onto the MCP loop.
 
 Tasks scheduled via run_coroutine_threadsafe are created inside the MCP
 event-loop thread, so they copy THAT thread's context — not the scheduling
 thread's. A per-request profile scope (dashboard ?profile= endpoints, e.g.
 the MCP "Test server" probe) would silently vanish for anything resolving
-get_hermes_home() inside the coroutine, most visibly OAuth token-store
+get_devascent_home() inside the coroutine, most visibly OAuth token-store
 paths. _run_on_mcp_loop now wraps scheduled coroutines with the caller's
 override (mcp_tool._wrap_with_home_override).
 """
@@ -23,8 +23,8 @@ def mcp_loop():
 
 
 def test_override_propagates_to_mcp_loop(tmp_path, monkeypatch, mcp_loop):
-    from hermes_constants import (
-        get_hermes_home,
+    from devascent_constants import (
+        get_devascent_home,
         reset_hermes_home_override,
         set_hermes_home_override,
     )
@@ -33,10 +33,10 @@ def test_override_propagates_to_mcp_loop(tmp_path, monkeypatch, mcp_loop):
     profile_home = tmp_path / "profile-home"
     process_home.mkdir()
     profile_home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(process_home))
+    monkeypatch.setenv("DEVASCENT_HOME", str(process_home))
 
     async def read_home():
-        return str(get_hermes_home())
+        return str(get_devascent_home())
 
     # Unscoped: the loop task sees the process home.
     assert mcp_loop._run_on_mcp_loop(read_home(), timeout=10) == str(process_home)
@@ -60,7 +60,7 @@ def test_oauth_token_paths_follow_override(tmp_path, monkeypatch, mcp_loop):
     """The actual symptom path: HermesTokenStorage resolving inside the
     probe's MCP-loop coroutine must land in the selected profile's
     mcp-tokens dir, not the process home's."""
-    from hermes_constants import (
+    from devascent_constants import (
         reset_hermes_home_override,
         set_hermes_home_override,
     )
@@ -69,7 +69,7 @@ def test_oauth_token_paths_follow_override(tmp_path, monkeypatch, mcp_loop):
     profile_home = tmp_path / "profile-home"
     process_home.mkdir()
     profile_home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(process_home))
+    monkeypatch.setenv("DEVASCENT_HOME", str(process_home))
 
     async def token_path():
         from tools.mcp_oauth import HermesTokenStorage
@@ -90,8 +90,8 @@ def test_concurrent_scopes_do_not_interfere(tmp_path, monkeypatch, mcp_loop):
     loop must each see their own home — the wrapper is task-local."""
     import threading
 
-    from hermes_constants import (
-        get_hermes_home,
+    from devascent_constants import (
+        get_devascent_home,
         reset_hermes_home_override,
         set_hermes_home_override,
     )
@@ -101,10 +101,10 @@ def test_concurrent_scopes_do_not_interfere(tmp_path, monkeypatch, mcp_loop):
     home_b = tmp_path / "profile-b"
     for h in (process_home, home_a, home_b):
         h.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(process_home))
+    monkeypatch.setenv("DEVASCENT_HOME", str(process_home))
 
     async def read_home():
-        return str(get_hermes_home())
+        return str(get_devascent_home())
 
     results: dict = {}
 

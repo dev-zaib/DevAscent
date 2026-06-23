@@ -90,7 +90,7 @@ docker/s6-rc.d/main-hermes/
 - Remove `edge-tts`, `browser` deps from core if present
 - Remove `[all]` extra (we don't need it)
 - Remove `gateway` from `packages.find` if no longer needed
-- Remove `hermes_cli` (CLI not needed for web-only platform)
+- Remove `devascent_cli` (CLI not needed for web-only platform)
 - Remove `locales` data-files (i18n not needed for MVP)
 
 ### `package.json`
@@ -113,7 +113,7 @@ docker/s6-rc.d/main-hermes/
 - Keep: Agent loop, tools registry, plugins, skills, testing
 
 ## Hermes Convention Checks
-- [x] No HERMES_ env var additions for non-secret config
+- [x] No DEVASCENT_ env var additions for non-secret config
 - [x] Keep provider system (`providers/`) — needed for LLM calls
 - [x] Keep plugin system — we'll add assessment as a plugin
 - [x] Keep `scripts/run_tests.sh` test infrastructure

@@ -14,16 +14,16 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from hermes_cli import kanban as kanban_cli
-from hermes_cli import kanban_db as kb
-from hermes_cli import kanban_specify as spec
+from devascent_cli import kanban as kanban_cli
+from devascent_cli import kanban_db as kb
+from devascent_cli import kanban_specify as spec
 
 
 @pytest.fixture
 def kanban_home(tmp_path, monkeypatch):
     home = tmp_path / ".hermes"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("DEVASCENT_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     kb.init_db()
     return home

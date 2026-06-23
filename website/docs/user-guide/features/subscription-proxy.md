@@ -33,7 +33,7 @@ hermes portal
 ```
 
 This opens your browser for the Nous Portal OAuth flow. Hermes stores
-the refresh token in `~/.hermes/auth.json` — the same place all Hermes
+the refresh token in `~/.devascent/auth.json` — the same place all Hermes
 provider logins live.
 
 ### 2. Start the proxy
@@ -74,7 +74,7 @@ hermes proxy providers
 
 Currently shipped: `nous` (Nous Portal) and `xai` (xAI / Grok). More
 OAuth providers can be added by implementing the `UpstreamAdapter`
-interface in `hermes_cli/proxy/adapters/`.
+interface in `devascent_cli/proxy/adapters/`.
 
 ## Check status
 
@@ -197,7 +197,7 @@ proxy is a credential-attaching pass-through.
 The adapter system is pluggable. Adding a new provider (e.g.
 HuggingFace, GitHub Copilot's chat endpoint, Anthropic via OAuth)
 requires implementing `UpstreamAdapter` in
-`hermes_cli/proxy/adapters/<provider>.py` and registering it in
+`devascent_cli/proxy/adapters/<provider>.py` and registering it in
 `adapters/__init__.py`. Providers that aren't OpenAI-compatible at the
 protocol level (Anthropic Messages API, for example) would need a
 transformation layer, which is out of scope for the current shape.

@@ -1136,8 +1136,8 @@ export default function SessionsPage() {
           credentials: "include",
           headers: {
             "X-Hermes-Session-Token":
-              (window as unknown as { __HERMES_SESSION_TOKEN__?: string })
-                .__HERMES_SESSION_TOKEN__ ?? "",
+              (window as unknown as { __DEVASCENT_SESSION_TOKEN__?: string })
+                .__DEVASCENT_SESSION_TOKEN__ ?? "",
           },
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);

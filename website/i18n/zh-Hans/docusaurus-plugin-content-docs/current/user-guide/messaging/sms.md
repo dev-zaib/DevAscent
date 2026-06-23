@@ -44,7 +44,7 @@ hermes gateway setup
 
 ### 手动设置
 
-在 `~/.hermes/.env` 中添加：
+在 `~/.devascent/.env` 中添加：
 
 ```bash
 TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

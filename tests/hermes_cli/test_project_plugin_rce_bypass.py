@@ -1,16 +1,16 @@
 """Regression coverage for GHSA-5qr3-c538-wm9j (#29156) — Remote Code
-Execution via the ``HERMES_ENABLE_PROJECT_PLUGINS`` bypass in the web
+Execution via the ``DEVASCENT_ENABLE_PROJECT_PLUGINS`` bypass in the web
 server's dashboard plugin loader.
 
 Two primitives combined into the original advisory chain:
 
-1. ``hermes_cli.web_server._discover_dashboard_plugins`` opted into
-   the untrusted ``./.hermes/plugins/`` source via
-   ``os.environ.get("HERMES_ENABLE_PROJECT_PLUGINS")`` — truthy for
+1. ``devascent_cli.web_server._discover_dashboard_plugins`` opted into
+   the untrusted ``./.devascent/plugins/`` source via
+   ``os.environ.get("DEVASCENT_ENABLE_PROJECT_PLUGINS")`` — truthy for
    any non-empty string, so ``=0`` / ``=false`` / ``=no`` (all of
    which the agent loader treats as off, and which operators set to
    *disable* project plugins) silently *enabled* the source.
-2. ``hermes_cli.web_server._mount_plugin_api_routes`` then imported
+2. ``devascent_cli.web_server._mount_plugin_api_routes`` then imported
    each plugin's manifest ``api`` field as a Python module via
    ``importlib.util.spec_from_file_location``.  The field was used
    raw, with no path-traversal check, so a single manifest line
@@ -37,7 +37,7 @@ from unittest.mock import patch
 
 import pytest
 
-from hermes_cli import web_server
+from devascent_cli import web_server
 
 
 @pytest.fixture(autouse=True)
@@ -61,7 +61,7 @@ def _write_plugin_manifest(root: Path, name: str, manifest: dict) -> Path:
 
 
 # ---------------------------------------------------------------------------
-# Layer 1 — HERMES_ENABLE_PROJECT_PLUGINS env gate uses truthy semantics.
+# Layer 1 — DEVASCENT_ENABLE_PROJECT_PLUGINS env gate uses truthy semantics.
 # ---------------------------------------------------------------------------
 
 
@@ -74,7 +74,7 @@ class TestProjectPluginsEnvGate:
     def project_plugin(self, tmp_path, monkeypatch):
         """Plant a project-source plugin under CWD's ``.hermes/plugins``
         and isolate the user-plugins dir to an empty tmp tree."""
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+        monkeypatch.setenv("DEVASCENT_HOME", str(tmp_path / "home"))
         (tmp_path / "home").mkdir()
         cwd = tmp_path / "evil-repo"
         cwd.mkdir()
@@ -95,14 +95,14 @@ class TestProjectPluginsEnvGate:
         self, project_plugin, monkeypatch, value
     ):
         if value == "":
-            monkeypatch.delenv("HERMES_ENABLE_PROJECT_PLUGINS", raising=False)
+            monkeypatch.delenv("DEVASCENT_ENABLE_PROJECT_PLUGINS", raising=False)
         else:
-            monkeypatch.setenv("HERMES_ENABLE_PROJECT_PLUGINS", value)
+            monkeypatch.setenv("DEVASCENT_ENABLE_PROJECT_PLUGINS", value)
 
         plugins = web_server._get_dashboard_plugins(force_rescan=True)
         names = {p["name"] for p in plugins}
         assert "evil" not in names, (
-            f"HERMES_ENABLE_PROJECT_PLUGINS={value!r} must NOT enable the "
+            f"DEVASCENT_ENABLE_PROJECT_PLUGINS={value!r} must NOT enable the "
             "project source — that's the GHSA-5qr3-c538-wm9j env bypass."
         )
 
@@ -110,7 +110,7 @@ class TestProjectPluginsEnvGate:
     def test_truthy_values_enable_project_plugins(
         self, project_plugin, monkeypatch, value
     ):
-        monkeypatch.setenv("HERMES_ENABLE_PROJECT_PLUGINS", value)
+        monkeypatch.setenv("DEVASCENT_ENABLE_PROJECT_PLUGINS", value)
         plugins = web_server._get_dashboard_plugins(force_rescan=True)
         evil = next((p for p in plugins if p["name"] == "evil"), None)
         assert evil is not None
@@ -184,8 +184,8 @@ class TestDiscoveryScrubsApiField:
 
     @pytest.fixture
     def user_plugin_factory(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-        monkeypatch.delenv("HERMES_ENABLE_PROJECT_PLUGINS", raising=False)
+        monkeypatch.setenv("DEVASCENT_HOME", str(tmp_path))
+        monkeypatch.delenv("DEVASCENT_ENABLE_PROJECT_PLUGINS", raising=False)
 
         def _make(name: str, manifest: dict) -> None:
             _write_plugin_manifest(tmp_path / "plugins", name, manifest)
@@ -234,9 +234,9 @@ class TestDiscoveryScrubsApiField:
         assert entry["has_api"] is False
 
     def test_project_safe_api_path_is_scrubbed(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+        monkeypatch.setenv("DEVASCENT_HOME", str(tmp_path / "home"))
         (tmp_path / "home").mkdir()
-        monkeypatch.setenv("HERMES_ENABLE_PROJECT_PLUGINS", "1")
+        monkeypatch.setenv("DEVASCENT_ENABLE_PROJECT_PLUGINS", "1")
         cwd = tmp_path / "project"
         cwd.mkdir()
         monkeypatch.chdir(cwd)
@@ -259,9 +259,9 @@ class TestDiscoveryScrubsApiField:
 
     def test_bundled_safe_api_path_survives(self, tmp_path, monkeypatch):
         hermes_home = tmp_path / "home"
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
         hermes_home.mkdir()
-        monkeypatch.setenv("HERMES_BUNDLED_PLUGINS", str(tmp_path / "bundled"))
+        monkeypatch.setenv("DEVASCENT_BUNDLED_PLUGINS", str(tmp_path / "bundled"))
         dashboard = _write_plugin_manifest(
             tmp_path / "bundled",
             "safe-bundled",
@@ -281,9 +281,9 @@ class TestDiscoveryScrubsApiField:
 
     def test_user_plugin_does_not_shadow_bundled_backend(self, tmp_path, monkeypatch):
         hermes_home = tmp_path / "home"
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
         hermes_home.mkdir()
-        monkeypatch.setenv("HERMES_BUNDLED_PLUGINS", str(tmp_path / "bundled"))
+        monkeypatch.setenv("DEVASCENT_BUNDLED_PLUGINS", str(tmp_path / "bundled"))
 
         bundled_dashboard = _write_plugin_manifest(
             tmp_path / "bundled",
@@ -398,21 +398,21 @@ class TestMountApiRoutesRefusesUntrusted:
 class TestEndToEndPocBlocked:
     """Reproduces the original advisory PoC shape: untrusted CWD with a
     manifest pointing ``api`` at an attacker-chosen Python file, with
-    ``HERMES_ENABLE_PROJECT_PLUGINS=0`` (so the operator believed the
+    ``DEVASCENT_ENABLE_PROJECT_PLUGINS=0`` (so the operator believed the
     project source was disabled).  Post-fix, the importer must never
     be invoked for the payload path, regardless of how the bypass is
     framed (``=0`` truthy-string bypass, absolute path bypass,
     project-source bypass)."""
 
     def test_full_chain_blocked(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+        monkeypatch.setenv("DEVASCENT_HOME", str(tmp_path / "home"))
         (tmp_path / "home").mkdir()
         cwd = tmp_path / "evil-repo"
         cwd.mkdir()
         monkeypatch.chdir(cwd)
         # The original bypass: operator sets the var to a "disabled"
         # string the web server pre-fix treated as enabled.
-        monkeypatch.setenv("HERMES_ENABLE_PROJECT_PLUGINS", "0")
+        monkeypatch.setenv("DEVASCENT_ENABLE_PROJECT_PLUGINS", "0")
         # Payload: absolute path inside a manifest dropped in CWD.
         payload_py = tmp_path / "payload.py"
         payload_py.write_text("OWNED = True\n")

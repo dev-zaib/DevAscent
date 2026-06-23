@@ -35,13 +35,13 @@ Open WebUI 与 Hermes 之间是服务器到服务器的通信，因此此集成�
 如果你希望在本地将 Hermes 与 Open WebUI 连接并使用可复用的启动器，请运行：
 
 ```bash
-cd ~/.hermes/hermes-agent
+cd ~/.devascent/hermes-agent
 bash scripts/setup_open_webui.sh
 ```
 
 脚本执行内容：
 
-- 确保 `~/.hermes/.env` 包含 `API_SERVER_ENABLED`、`API_SERVER_HOST`、`API_SERVER_KEY`、`API_SERVER_PORT` 和 `API_SERVER_MODEL_NAME`
+- 确保 `~/.devascent/.env` 包含 `API_SERVER_ENABLED`、`API_SERVER_HOST`、`API_SERVER_KEY`、`API_SERVER_PORT` 和 `API_SERVER_MODEL_NAME`
 - 重启 Hermes gateway 以启动 API 服务器
 - 将 Open WebUI 安装到 `~/.local/open-webui-venv`
 - 在 `~/.local/bin/start-open-webui-hermes.sh` 写入启动器
@@ -58,7 +58,7 @@ bash scripts/setup_open_webui.sh
 ```bash
 OPEN_WEBUI_NAME='My Hermes UI' \
 OPEN_WEBUI_ENABLE_SIGNUP=true \
-HERMES_API_MODEL_NAME='My Hermes Agent' \
+DEVASCENT_API_MODEL_NAME='My Hermes Agent' \
 bash scripts/setup_open_webui.sh
 ```
 
@@ -75,7 +75,7 @@ hermes config set API_SERVER_ENABLED true
 hermes config set API_SERVER_KEY your-secret-key
 ```
 
-`hermes config set` 会自动将标志路由到 `config.yaml`，将密钥路由到 `~/.hermes/.env`。如果 gateway 已在运行，请重启以使更改生效：
+`hermes config set` 会自动将标志路由到 `config.yaml`，将密钥路由到 `~/.devascent/.env`。如果 gateway 已在运行，请重启以使更改生效：
 
 ```bash
 hermes gateway stop && hermes gateway
@@ -100,7 +100,7 @@ curl -s http://127.0.0.1:8642/health
 # {"status": "ok", ...}
 
 curl -s -H "Authorization: Bearer your-secret-key" http://127.0.0.1:8642/v1/models
-# {"object":"list","data":[{"id":"hermes-agent", ...}]}
+# {"object":"list","data":[{"id":"devascent", ...}]}
 ```
 
 如果 `/health` 失败，说明 gateway 未加载 `API_SERVER_ENABLED=true`——重启它。如果 `/v1/models` 返回 `401`，说明你的 `Authorization` 头与 `API_SERVER_KEY` 不匹配。
@@ -279,14 +279,14 @@ Open WebUI 在首次启动后会将 OpenAI 兼容连接设置持久化到其自�
 
 ```bash
 hermes profile create alice
-cat >> ~/.hermes/profiles/alice/.env <<EOF
+cat >> ~/.devascent/profiles/alice/.env <<EOF
 API_SERVER_ENABLED=true
 API_SERVER_PORT=8650
 API_SERVER_KEY=alice-secret
 EOF
 
 hermes profile create bob
-cat >> ~/.hermes/profiles/bob/.env <<EOF
+cat >> ~/.devascent/profiles/bob/.env <<EOF
 API_SERVER_ENABLED=true
 API_SERVER_PORT=8651
 API_SERVER_KEY=bob-secret

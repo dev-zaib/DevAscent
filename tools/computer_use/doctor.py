@@ -223,7 +223,7 @@ def run_doctor(
 ) -> int:
     """Resolve the cua-driver binary, call `health_report`, render the result.
 
-    Honors `HERMES_CUA_DRIVER_CMD` via the same `_cua_driver_cmd()` resolver
+    Honors `DEVASCENT_CUA_DRIVER_CMD` via the same `_cua_driver_cmd()` resolver
     that `install_cua_driver` + the runtime backend use, so the doctor
     diagnoses what your `computer_use` toolset will actually invoke.
     """
@@ -240,10 +240,10 @@ def run_doctor(
             pass
     if driver_cmd is None:
         try:
-            from hermes_cli.tools_config import _cua_driver_cmd
+            from devascent_cli.tools_config import _cua_driver_cmd
             driver_cmd = _cua_driver_cmd()
         except Exception:
-            driver_cmd = os.environ.get("HERMES_CUA_DRIVER_CMD") or "cua-driver"
+            driver_cmd = os.environ.get("DEVASCENT_CUA_DRIVER_CMD") or "cua-driver"
 
     binary = shutil.which(driver_cmd)
     if not binary:

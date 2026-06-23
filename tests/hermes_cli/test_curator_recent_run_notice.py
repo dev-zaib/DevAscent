@@ -24,14 +24,14 @@ def curator_env(tmp_path, monkeypatch, capsys):
     home.mkdir()
     (home / "skills").mkdir()
     (home / "logs").mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("DEVASCENT_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
-    import hermes_constants
-    importlib.reload(hermes_constants)
+    import devascent_constants
+    importlib.reload(devascent_constants)
     from agent import curator
     importlib.reload(curator)
-    from hermes_cli import main as hermes_main
+    from devascent_cli import main as hermes_main
     importlib.reload(hermes_main)
 
     yield {

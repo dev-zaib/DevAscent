@@ -19,9 +19,9 @@ import pytest
 @pytest.fixture
 def session_db(tmp_path):
     """Create a real SessionDB for testing."""
-    os.environ["HERMES_HOME"] = str(tmp_path / ".hermes")
+    os.environ["DEVASCENT_HOME"] = str(tmp_path / ".hermes")
     os.makedirs(tmp_path / ".hermes", exist_ok=True)
-    from hermes_state import SessionDB
+    from devascent_state import SessionDB
     db = SessionDB(db_path=tmp_path / ".hermes" / "test_sessions.db")
     yield db
     db.close()
@@ -172,18 +172,18 @@ class TestBranchCommandCLI:
         from gateway.session_context import _UNSET, _VAR_MAP, get_session_env
 
         old_session_id = cli_instance.session_id
-        os.environ["HERMES_SESSION_ID"] = old_session_id
-        _VAR_MAP["HERMES_SESSION_ID"].set(old_session_id)
+        os.environ["DEVASCENT_SESSION_ID"] = old_session_id
+        _VAR_MAP["DEVASCENT_SESSION_ID"].set(old_session_id)
 
         try:
             HermesCLI._handle_branch_command(cli_instance, "/branch")
 
             assert cli_instance.session_id != old_session_id
-            assert os.environ["HERMES_SESSION_ID"] == cli_instance.session_id
-            assert get_session_env("HERMES_SESSION_ID") == cli_instance.session_id
+            assert os.environ["DEVASCENT_SESSION_ID"] == cli_instance.session_id
+            assert get_session_env("DEVASCENT_SESSION_ID") == cli_instance.session_id
         finally:
-            os.environ.pop("HERMES_SESSION_ID", None)
-            _VAR_MAP["HERMES_SESSION_ID"].set(_UNSET)
+            os.environ.pop("DEVASCENT_SESSION_ID", None)
+            _VAR_MAP["DEVASCENT_SESSION_ID"].set(_UNSET)
 
     def test_branch_fires_on_session_switch_hook(self, cli_instance, session_db):
         """The /branch command must notify memory providers of the rotation.
@@ -214,7 +214,7 @@ class TestBranchCommandCLI:
 
     def test_fork_alias(self):
         """The /fork alias should resolve to 'branch'."""
-        from hermes_cli.commands import resolve_command
+        from devascent_cli.commands import resolve_command
         result = resolve_command("fork")
         assert result is not None
         assert result.name == "branch"
@@ -225,18 +225,18 @@ class TestBranchCommandDef:
 
     def test_branch_in_registry(self):
         """The branch command should be in the command registry."""
-        from hermes_cli.commands import COMMAND_REGISTRY
+        from devascent_cli.commands import COMMAND_REGISTRY
         names = [c.name for c in COMMAND_REGISTRY]
         assert "branch" in names
 
     def test_branch_has_fork_alias(self):
         """The branch command should have 'fork' as an alias."""
-        from hermes_cli.commands import COMMAND_REGISTRY
+        from devascent_cli.commands import COMMAND_REGISTRY
         branch = next(c for c in COMMAND_REGISTRY if c.name == "branch")
         assert "fork" in branch.aliases
 
     def test_branch_in_session_category(self):
         """The branch command should be in the Session category."""
-        from hermes_cli.commands import COMMAND_REGISTRY
+        from devascent_cli.commands import COMMAND_REGISTRY
         branch = next(c for c in COMMAND_REGISTRY if c.name == "branch")
         assert branch.category == "Session"

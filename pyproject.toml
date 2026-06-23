@@ -68,7 +68,7 @@ dependencies = [
   # try/except-ImportError fallbacks silently degrade: Hindsight's
   # ``_meets_minimum_version`` disables update_mode='append' (#40503),
   # tools/lazy_deps.py treats every version constraint as satisfied, and
-  # hermes_cli/main.py drops to naive requirement parsing. Pure-Python
+  # devascent_cli/main.py drops to naive requirement parsing. Pure-Python
   # py3-none-any wheel, no compiled extensions — safe to ship everywhere.
   # Pinned to the version already resolved in uv.lock (no resolution churn).
   "packaging==26.0",
@@ -129,7 +129,7 @@ dependencies = [
   # processes), pinning ``agent.log`` at the 5 MiB threshold and spamming
   # stderr on every emit (see #44873). ``concurrent-log-handler`` wraps the
   # rename in a cross-process file lock (via ``portalocker``: pywin32 on
-  # Windows) so only one process rotates at a time. ``hermes_logging.py``
+  # Windows) so only one process rotates at a time. ``devascent_logging.py``
   # aliases it ONLY on Windows — POSIX renames an open file fine, so stdlib
   # already works there and managed-mode perms depend on its exact lifecycle.
   # Hence the ``sys_platform == 'win32'`` marker: the dep (and its portalocker
@@ -177,7 +177,7 @@ web = ["fastapi==0.133.1", "uvicorn[standard]==0.41.0", "starlette==1.0.1", "pyt
 devascent = "devascent_cli.main:main"
 
 [tool.setuptools]
-py-modules = ["run_agent", "model_tools", "toolsets", "batch_runner", "trajectory_compressor", "toolset_distributions", "cli", "hermes_bootstrap", "hermes_constants", "hermes_state", "hermes_time", "hermes_logging", "utils", "mcp_serve"]
+py-modules = ["run_agent", "model_tools", "toolsets", "batch_runner", "trajectory_compressor", "toolset_distributions", "cli", "devascent_bootstrap", "devascent_constants", "devascent_state", "devascent_time", "devascent_logging", "utils", "mcp_serve"]
 
 [tool.setuptools.data-files]
 # i18n catalogs. locales/ is a bare data directory (no __init__.py), so it is
@@ -191,7 +191,7 @@ locales = ["locales/*.yaml"]
 # case as locales: data-files ships it in the wheel, `graft optional-mcps` in
 # MANIFEST.in ships it in the sdist. Without this, `hermes mcp catalog` and the
 # dashboard catalog screen come up empty on packaged installs even though the
-# manifests exist in the repo (hermes_cli/mcp_catalog.py:_catalog_root resolves
+# manifests exist in the repo (devascent_cli/mcp_catalog.py:_catalog_root resolves
 # the packaged dir; list_catalog() returns [] when it's missing).
 #
 # data-files flattens every glob match into its single target dir, so each
@@ -203,7 +203,7 @@ locales = ["locales/*.yaml"]
 "optional-mcps/n8n" = ["optional-mcps/n8n/manifest.yaml"]
 
 [tool.setuptools.package-data]
-hermes_cli = ["web_dist/**/*", "scripts/install.sh", "scripts/install.ps1"]
+devascent_cli = ["web_dist/**/*", "scripts/install.sh", "scripts/install.ps1"]
 gateway = ["assets/**/*"]
 plugins = [
   "*/dashboard/manifest.json",
@@ -215,13 +215,13 @@ plugins = [
 ]
 
 [tool.setuptools.packages.find]
-include = ["agent", "agent.*", "tools", "tools.*", "hermes_cli", "hermes_cli.*", "gateway", "gateway.*", "cron", "cron.*", "acp_adapter", "plugins", "plugins.*", "providers", "providers.*", "devascent", "devascent.*"]
+include = ["agent", "agent.*", "tools", "tools.*", "devascent_cli", "devascent_cli.*", "gateway", "gateway.*", "cron", "cron.*", "acp_adapter", "plugins", "plugins.*", "providers", "providers.*", "devascent", "devascent.*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 markers = [
     "integration: marks tests requiring external services (API keys, Modal, etc.)",
-    "real_concurrent_gate: opt out of the autouse stub that disables _detect_concurrent_hermes_instances",
+    "real_concurrent_gate: opt out of the autouse stub that disables _detect_concurrent_devascent_instances",
 ]
 # integration tests take way too long to run in the normal CI environments
 addopts = "-m 'not integration'"

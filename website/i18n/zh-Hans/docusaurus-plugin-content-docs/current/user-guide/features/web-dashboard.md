@@ -170,7 +170,7 @@ Chat 标签页是每次 `hermes dashboard` 启动的一部分——内嵌的浏�
 
 ### Skills（技能）
 
-浏览、搜索和切换技能与工具集。技能从 `~/.hermes/skills/` 加载，并按类别分组。
+浏览、搜索和切换技能与工具集。技能从 `~/.devascent/skills/` 加载，并按类别分组。
 
 - **Search** — 按名称、描述或类别过滤技能和工具集
 - **Category filter** — 点击类别标签缩小列表范围（如 MLOps、MCP、Red Teaming、AI）
@@ -190,7 +190,7 @@ You → /reload
   Reloaded .env (3 var(s) updated)
 ```
 
-这会将 `~/.hermes/.env` 重新读取到运行中进程的环境中。当你通过 Dashboard 添加了新的提供商密钥并希望立即使用时非常有用。
+这会将 `~/.devascent/.env` 重新读取到运行中进程的环境中。当你通过 Dashboard 添加了新的提供商密钥并希望立即使用时非常有用。
 
 ## REST API
 
@@ -318,7 +318,7 @@ npm run dev
 
 `http://localhost:5173` 上的 Vite 开发服务器会将 `/api` 请求代理到 `http://127.0.0.1:9119` 上的 FastAPI 后端。
 
-前端使用 React 19、TypeScript、Tailwind CSS v4 和 shadcn/ui 风格组件构建。生产构建输出到 `hermes_cli/web_dist/`，由 FastAPI 服务器作为静态 SPA 提供服务。
+前端使用 React 19、TypeScript、Tailwind CSS v4 和 shadcn/ui 风格组件构建。生产构建输出到 `devascent_cli/web_dist/`，由 FastAPI 服务器作为静态 SPA 提供服务。
 
 ## 更新时自动构建
 

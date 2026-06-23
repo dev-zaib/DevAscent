@@ -21,7 +21,7 @@ auto-create jobs; acceptance is always explicit (consent-first). Dismissed
 suggestions latch by a stable ``dedup_key`` so the same proposal is not
 re-offered after the user says no.
 
-Storage mirrors ``cron/jobs.py``: ``~/.hermes/cron/suggestions.json``, atomic
+Storage mirrors ``cron/jobs.py``: ``~/.devascent/cron/suggestions.json``, atomic
 writes, an in-process lock, and 0600 perms.
 """
 
@@ -36,13 +36,13 @@ import uuid
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from hermes_constants import get_hermes_home
-from hermes_time import now as _hermes_now
+from devascent_constants import get_devascent_home
+from devascent_time import now as _hermes_now
 from utils import atomic_replace
 
 logger = logging.getLogger(__name__)
 
-CRON_DIR = get_hermes_home().resolve() / "cron"
+CRON_DIR = get_devascent_home().resolve() / "cron"
 SUGGESTIONS_FILE = CRON_DIR / "suggestions.json"
 
 # In-process lock protecting load->modify->save cycles (the background review

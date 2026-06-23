@@ -22,7 +22,7 @@ def test_postprocess_adds_agent_visible_image_for_active_ssh_env(monkeypatch, tm
         _sync_manager=FakeSyncManager(),
     )
 
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
     monkeypatch.setattr(image_generation_tool, "_active_terminal_env", lambda task_id: env)
 
     raw = json.dumps({"success": True, "image": str(image_path)})
@@ -33,7 +33,7 @@ def test_postprocess_adds_agent_visible_image_for_active_ssh_env(monkeypatch, tm
     assert result["image"] == str(image_path)
     assert result["host_image"] == str(image_path)
     assert result["agent_visible_image"] == (
-        "/home/remotesshuser/.hermes/cache/images/xai_grok-imagine-image_test.jpg"
+        "/home/remotesshuser/.devascent/cache/images/xai_grok-imagine-image_test.jpg"
     )
     assert sync_calls == [True]
 
@@ -47,7 +47,7 @@ def test_postprocess_maps_docker_cache_path_without_active_env(monkeypatch, tmp_
     image_path = image_dir / "generated.png"
     image_path.write_bytes(b"png")
 
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
     monkeypatch.setenv("TERMINAL_ENV", "docker")
     monkeypatch.setattr(image_generation_tool, "_active_terminal_env", lambda task_id: None)
 
@@ -55,7 +55,7 @@ def test_postprocess_maps_docker_cache_path_without_active_env(monkeypatch, tmp_
     result = json.loads(image_generation_tool._postprocess_image_generate_result(raw))
 
     assert result["image"] == str(image_path)
-    assert result["agent_visible_image"] == "/root/.hermes/cache/images/generated.png"
+    assert result["agent_visible_image"] == "/root/.devascent/cache/images/generated.png"
 
 
 def test_postprocess_maps_ssh_cache_path_without_active_env(monkeypatch, tmp_path):
@@ -67,7 +67,7 @@ def test_postprocess_maps_ssh_cache_path_without_active_env(monkeypatch, tmp_pat
     image_path = image_dir / "first-call.png"
     image_path.write_bytes(b"png")
 
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
     monkeypatch.setenv("TERMINAL_ENV", "ssh")
     monkeypatch.setattr(image_generation_tool, "_active_terminal_env", lambda task_id: None)
 
@@ -75,7 +75,7 @@ def test_postprocess_maps_ssh_cache_path_without_active_env(monkeypatch, tmp_pat
     result = json.loads(image_generation_tool._postprocess_image_generate_result(raw))
 
     assert result["image"] == str(image_path)
-    assert result["agent_visible_image"] == "~/.hermes/cache/images/first-call.png"
+    assert result["agent_visible_image"] == "~/.devascent/cache/images/first-call.png"
 
 
 def test_postprocess_leaves_remote_image_urls_unchanged(monkeypatch):
@@ -105,7 +105,7 @@ def test_handle_image_generate_postprocesses_plugin_result(monkeypatch, tmp_path
         seen_task_ids.append(task_id)
         return env
 
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("DEVASCENT_HOME", str(hermes_home))
     monkeypatch.setattr(image_generation_tool, "_active_terminal_env", fake_active_env)
     monkeypatch.setattr(
         image_generation_tool,
@@ -121,4 +121,4 @@ def test_handle_image_generate_postprocesses_plugin_result(monkeypatch, tmp_path
     )
 
     assert seen_task_ids == ["plugin-task"]
-    assert result["agent_visible_image"] == "/home/remote/.hermes/cache/images/plugin.png"
+    assert result["agent_visible_image"] == "/home/remote/.devascent/cache/images/plugin.png"

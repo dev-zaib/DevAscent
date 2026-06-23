@@ -1,4 +1,4 @@
-"""Tests for hermes_cli.kanban_diagnostics — rule-engine that produces
+"""Tests for devascent_cli.kanban_diagnostics — rule-engine that produces
 structured distress signals (diagnostics) for kanban tasks.
 
 These tests exercise each rule in isolation using minimal in-memory
@@ -14,8 +14,8 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli import kanban_db as kb
-from hermes_cli import kanban_diagnostics as kd
+from devascent_cli import kanban_db as kb
+from devascent_cli import kanban_diagnostics as kd
 
 
 # ---------------------------------------------------------------------------
@@ -27,7 +27,7 @@ from hermes_cli import kanban_diagnostics as kd
 def kanban_home(tmp_path, monkeypatch):
     home = tmp_path / ".hermes"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("DEVASCENT_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     kb.init_db()
     return home

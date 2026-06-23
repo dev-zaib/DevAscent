@@ -53,7 +53,7 @@ hermes model
 hermes
 ```
 
-首次登录后，凭据存储在 `~/.hermes/auth.json` 中，并在过期前自动刷新。
+首次登录后，凭据存储在 `~/.devascent/auth.json` 中，并在过期前自动刷新。
 
 ## 手动登录
 
@@ -98,7 +98,7 @@ hermes model --manual-paste
 
 1. Hermes 在浏览器中打开 `accounts.x.ai`。
 2. 你登录（或确认现有会话）并批准访问。
-3. xAI 重定向回 Hermes，token 保存到 `~/.hermes/auth.json`。
+3. xAI 重定向回 Hermes，token 保存到 `~/.devascent/auth.json`。
 4. 此后，Hermes 在后台刷新 access token——你将保持登录状态，直到执行 `hermes auth logout xai-oauth` 或在 xAI 账号设置中撤销访问。
 
 ## 检查登录状态
@@ -126,7 +126,7 @@ hermes config set model.provider xai-oauth
 
 ## 配置参考
 
-登录后，`~/.hermes/config.yaml` 将包含：
+登录后，`~/.devascent/config.yaml` 将包含：
 
 ```yaml
 model:

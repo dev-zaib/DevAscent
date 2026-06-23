@@ -122,8 +122,8 @@ hermes cron create "0 9 * * 1" \
 2. Filter to PRs merged in the last 7 days
 3. For each merged PR, check if it modified:
    - Tool schemas (tools/*.py) — may need docs/reference/tools-reference.md update
-   - CLI commands (hermes_cli/commands.py, hermes_cli/main.py) — may need docs/reference/cli-commands.md update
-   - Config options (hermes_cli/config.py) — may need docs/user-guide/configuration.md update
+   - CLI commands (devascent_cli/commands.py, devascent_cli/main.py) — may need docs/reference/cli-commands.md update
+   - Config options (devascent_cli/config.py) — may need docs/user-guide/configuration.md update
    - Environment variables — may need docs/reference/environment-variables.md update
 4. Cross-reference: for each code change, check if the corresponding docs page was also updated in the same PR
 
@@ -142,7 +142,7 @@ Report any gaps where code changed but docs didn't. If everything is in sync, re
 hermes cron create "0 6 * * *" \
   "Run a dependency security audit on the hermes-agent project.
 
-1. cd ~/.hermes/hermes-agent && source .venv/bin/activate
+1. cd ~/.devascent/hermes-agent && source .venv/bin/activate
 2. Run: pip audit --format json 2>/dev/null || pip audit 2>&1
 3. Run: npm audit --json 2>/dev/null (in website/ directory if it exists)
 4. Check for any CVEs with CVSS score >= 7.0
@@ -228,7 +228,7 @@ Be concise. This goes to the on-call channel." \
 
 **触发方式：** 定时（每 30 分钟）
 
-```python title="~/.hermes/scripts/check-uptime.py"
+```python title="~/.devascent/scripts/check-uptime.py"
 import urllib.request, json, time
 
 ENDPOINTS = [
@@ -261,7 +261,7 @@ else:
 ```bash
 hermes cron create "every 30m" \
   "If the script reports OUTAGE DETECTED, summarize which services are down and suggest likely causes. If NO_ISSUES, respond with [SILENT]." \
-  --script ~/.hermes/scripts/check-uptime.py \
+  --script ~/.devascent/scripts/check-uptime.py \
   --name "Uptime monitor" \
   --deliver telegram
 ```

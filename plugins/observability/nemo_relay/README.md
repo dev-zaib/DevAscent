@@ -41,29 +41,29 @@ Enable the plugin before setting export options:
 hermes plugins enable observability/nemo_relay
 ```
 
-The `HERMES_NEMO_RELAY_*` environment variables below only configure an
+The `DEVASCENT_NEMO_RELAY_*` environment variables below only configure an
 already-enabled plugin. They do not enable plugin discovery by themselves.
 
-For isolated test homes, enable the plugin in the same `HERMES_HOME` that the
+For isolated test homes, enable the plugin in the same `DEVASCENT_HOME` that the
 agent run will use:
 
 ```bash
-env HERMES_HOME=/tmp/hermes-nemo-relay-test \
+env DEVASCENT_HOME=/tmp/hermes-nemo-relay-test \
   hermes plugins enable observability/nemo_relay
 ```
 
 Runs started with `--ignore_user_config` skip the enabled-plugin state from
-`HERMES_HOME`, so local E2E tests should omit that flag unless the test harness
+`DEVASCENT_HOME`, so local E2E tests should omit that flag unless the test harness
 loads `observability/nemo_relay` explicitly another way.
 
-`HERMES_HOME` is the Hermes profile/config home used by both
+`DEVASCENT_HOME` is the Hermes profile/config home used by both
 `hermes plugins enable ...` and the later `hermes chat ...` run. If unset,
-Hermes uses the user's default home, usually `~/.hermes`. For isolated smoke
+Hermes uses the user's default home, usually `~/.devascent`. For isolated smoke
 tests, choose any writable temporary directory and use the same value for every
 command in that test:
 
 ```bash
-export HERMES_HOME=/tmp/hermes-nemo-relay-test
+export DEVASCENT_HOME=/tmp/hermes-nemo-relay-test
 hermes plugins enable observability/nemo_relay
 hermes chat --query 'Reply exactly ok' --provider custom --model qwen3.6:35b
 ```
@@ -96,7 +96,7 @@ pip install "nemo-relay==0.3"
 
 ## Export Configuration
 
-The plugin can configure exporters directly from `HERMES_NEMO_RELAY_*`
+The plugin can configure exporters directly from `DEVASCENT_NEMO_RELAY_*`
 environment variables, or delegate exporter setup to a NeMo Relay
 `plugins.toml` component config.
 
@@ -110,21 +110,21 @@ OpenInference.
 Useful local export settings after the plugin is enabled:
 
 ```bash
-export HERMES_NEMO_RELAY_ATOF_ENABLED=1
-export HERMES_NEMO_RELAY_ATOF_OUTPUT_DIRECTORY=.nemo-relay/atof
-export HERMES_NEMO_RELAY_ATIF_ENABLED=1
-export HERMES_NEMO_RELAY_ATIF_OUTPUT_DIRECTORY=.nemo-relay/atif
+export DEVASCENT_NEMO_RELAY_ATOF_ENABLED=1
+export DEVASCENT_NEMO_RELAY_ATOF_OUTPUT_DIRECTORY=.nemo-relay/atof
+export DEVASCENT_NEMO_RELAY_ATIF_ENABLED=1
+export DEVASCENT_NEMO_RELAY_ATIF_OUTPUT_DIRECTORY=.nemo-relay/atif
 ```
 
 Optional overrides:
 
-- `HERMES_NEMO_RELAY_ATOF_FILENAME`
-- `HERMES_NEMO_RELAY_ATOF_MODE` (`append` or `overwrite`)
-- `HERMES_NEMO_RELAY_ATIF_FILENAME_TEMPLATE`
-- `HERMES_NEMO_RELAY_ATIF_AGENT_NAME`
-- `HERMES_NEMO_RELAY_ATIF_AGENT_VERSION`
-- `HERMES_NEMO_RELAY_ATIF_MODEL_NAME`
-- `HERMES_NEMO_RELAY_ATIF_SUBAGENT_EXPORT_MODE` (`embedded` by default; set `all` to also write standalone child files)
+- `DEVASCENT_NEMO_RELAY_ATOF_FILENAME`
+- `DEVASCENT_NEMO_RELAY_ATOF_MODE` (`append` or `overwrite`)
+- `DEVASCENT_NEMO_RELAY_ATIF_FILENAME_TEMPLATE`
+- `DEVASCENT_NEMO_RELAY_ATIF_AGENT_NAME`
+- `DEVASCENT_NEMO_RELAY_ATIF_AGENT_VERSION`
+- `DEVASCENT_NEMO_RELAY_ATIF_MODEL_NAME`
+- `DEVASCENT_NEMO_RELAY_ATIF_SUBAGENT_EXPORT_MODE` (`embedded` by default; set `all` to also write standalone child files)
 
 ### NeMo Relay Component Config
 
@@ -132,7 +132,7 @@ To initialize NeMo Relay from a component config, create a `plugins.toml` file
 and point Hermes at it:
 
 ```bash
-export HERMES_NEMO_RELAY_PLUGINS_TOML=.nemo-relay/plugins.toml
+export DEVASCENT_NEMO_RELAY_PLUGINS_TOML=.nemo-relay/plugins.toml
 ```
 
 Minimal ATOF and ATIF config:
@@ -161,11 +161,11 @@ agent_name = "Hermes Agent"
 agent_version = "local"
 ```
 
-When `HERMES_NEMO_RELAY_PLUGINS_TOML` is set and initializes successfully, NeMo
+When `DEVASCENT_NEMO_RELAY_PLUGINS_TOML` is set and initializes successfully, NeMo
 Relay owns exporter lifecycle through that config. The direct
-`HERMES_NEMO_RELAY_ATOF_*` fallback setup is skipped. If the same
+`DEVASCENT_NEMO_RELAY_ATOF_*` fallback setup is skipped. If the same
 `plugins.toml` observability config enables `atif`, the direct
-`HERMES_NEMO_RELAY_ATIF_*` fallback setup is also skipped so Hermes does not
+`DEVASCENT_NEMO_RELAY_ATIF_*` fallback setup is also skipped so Hermes does not
 double-export trajectories on teardown. If `plugins.toml` initialization fails,
 Hermes keeps the direct env-var fallbacks active for that run.
 
@@ -200,10 +200,10 @@ distribution and a local Ollama model served through the OpenAI-compatible API.
 ```bash
 pip install "nemo-relay==0.3"
 
-export HERMES_HOME=/tmp/hermes-nemo-relay-docs/hermes-home
-mkdir -p "$HERMES_HOME"
+export DEVASCENT_HOME=/tmp/hermes-nemo-relay-docs/hermes-home
+mkdir -p "$DEVASCENT_HOME"
 
-cat > "$HERMES_HOME/config.yaml" <<'YAML'
+cat > "$DEVASCENT_HOME/config.yaml" <<'YAML'
 model:
   provider: custom
   default: qwen3.6:35b
@@ -229,16 +229,16 @@ This run starts a parent Hermes session, delegates to a child subagent, has the
 child call `terminal`, and writes both ATOF and ATIF.
 
 ```bash
-export HERMES_NEMO_RELAY_ATOF_ENABLED=1
-export HERMES_NEMO_RELAY_ATOF_OUTPUT_DIRECTORY=/tmp/hermes-nemo-relay-docs/subagent/atof
-export HERMES_NEMO_RELAY_ATOF_FILENAME=nested-subagent-atof.jsonl
-export HERMES_NEMO_RELAY_ATOF_MODE=overwrite
-export HERMES_NEMO_RELAY_ATIF_ENABLED=1
-export HERMES_NEMO_RELAY_ATIF_OUTPUT_DIRECTORY=/tmp/hermes-nemo-relay-docs/subagent/atif
-export HERMES_NEMO_RELAY_ATIF_FILENAME_TEMPLATE='nested-subagent-atif-{session_id}.json'
-export HERMES_NEMO_RELAY_ATIF_AGENT_NAME='Hermes Agent E2E'
-export HERMES_NEMO_RELAY_ATIF_AGENT_VERSION=docs-example
-export HERMES_NEMO_RELAY_ATIF_SUBAGENT_EXPORT_MODE=all
+export DEVASCENT_NEMO_RELAY_ATOF_ENABLED=1
+export DEVASCENT_NEMO_RELAY_ATOF_OUTPUT_DIRECTORY=/tmp/hermes-nemo-relay-docs/subagent/atof
+export DEVASCENT_NEMO_RELAY_ATOF_FILENAME=nested-subagent-atof.jsonl
+export DEVASCENT_NEMO_RELAY_ATOF_MODE=overwrite
+export DEVASCENT_NEMO_RELAY_ATIF_ENABLED=1
+export DEVASCENT_NEMO_RELAY_ATIF_OUTPUT_DIRECTORY=/tmp/hermes-nemo-relay-docs/subagent/atif
+export DEVASCENT_NEMO_RELAY_ATIF_FILENAME_TEMPLATE='nested-subagent-atif-{session_id}.json'
+export DEVASCENT_NEMO_RELAY_ATIF_AGENT_NAME='Hermes Agent E2E'
+export DEVASCENT_NEMO_RELAY_ATIF_AGENT_VERSION=docs-example
+export DEVASCENT_NEMO_RELAY_ATIF_SUBAGENT_EXPORT_MODE=all
 
 hermes chat \
   --query 'Use delegate_task exactly once. Ask the child subagent to use the terminal tool exactly once to run printf docs_nested_leaf_function. After the child returns, reply with exactly: parent received nested subagent result.' \
@@ -315,15 +315,15 @@ printf 'docs_parallel_alpha_function\n' > /tmp/hermes-nemo-relay-docs/workdir/al
 printf 'docs_parallel_beta_function\n' > /tmp/hermes-nemo-relay-docs/workdir/beta.txt
 cd /tmp/hermes-nemo-relay-docs/workdir
 
-export HERMES_NEMO_RELAY_ATOF_ENABLED=1
-export HERMES_NEMO_RELAY_ATOF_OUTPUT_DIRECTORY=/tmp/hermes-nemo-relay-docs/parallel/atof
-export HERMES_NEMO_RELAY_ATOF_FILENAME=parallel-tools-atof.jsonl
-export HERMES_NEMO_RELAY_ATOF_MODE=overwrite
-export HERMES_NEMO_RELAY_ATIF_ENABLED=1
-export HERMES_NEMO_RELAY_ATIF_OUTPUT_DIRECTORY=/tmp/hermes-nemo-relay-docs/parallel/atif
-export HERMES_NEMO_RELAY_ATIF_FILENAME_TEMPLATE='parallel-tools-atif-{session_id}.json'
-export HERMES_NEMO_RELAY_ATIF_AGENT_NAME='Hermes Agent E2E'
-export HERMES_NEMO_RELAY_ATIF_AGENT_VERSION=docs-example
+export DEVASCENT_NEMO_RELAY_ATOF_ENABLED=1
+export DEVASCENT_NEMO_RELAY_ATOF_OUTPUT_DIRECTORY=/tmp/hermes-nemo-relay-docs/parallel/atof
+export DEVASCENT_NEMO_RELAY_ATOF_FILENAME=parallel-tools-atof.jsonl
+export DEVASCENT_NEMO_RELAY_ATOF_MODE=overwrite
+export DEVASCENT_NEMO_RELAY_ATIF_ENABLED=1
+export DEVASCENT_NEMO_RELAY_ATIF_OUTPUT_DIRECTORY=/tmp/hermes-nemo-relay-docs/parallel/atif
+export DEVASCENT_NEMO_RELAY_ATIF_FILENAME_TEMPLATE='parallel-tools-atif-{session_id}.json'
+export DEVASCENT_NEMO_RELAY_ATIF_AGENT_NAME='Hermes Agent E2E'
+export DEVASCENT_NEMO_RELAY_ATIF_AGENT_VERSION=docs-example
 
 hermes chat \
   --query 'Use exactly two read_file tool calls in the same assistant message. Read alpha.txt and beta.txt. Do not call terminal. After both tool results are available, reply with exactly: parallel tools complete.' \
@@ -416,7 +416,7 @@ mode = "observe_only"
 Enable it for Hermes:
 
 ```bash
-export HERMES_NEMO_RELAY_PLUGINS_TOML=/tmp/hermes-middleware-test/plugins.toml
+export DEVASCENT_NEMO_RELAY_PLUGINS_TOML=/tmp/hermes-middleware-test/plugins.toml
 ```
 
 When the adaptive component is enabled and the installed NeMo Relay runtime
@@ -449,10 +449,10 @@ install used by the earlier observability-only examples does not support this
 adaptive config.
 
 ```bash
-export HERMES_HOME=/tmp/hermes-middleware-test/hermes-home
-mkdir -p "$HERMES_HOME" /tmp/hermes-middleware-test/nemo-relay
+export DEVASCENT_HOME=/tmp/hermes-middleware-test/hermes-home
+mkdir -p "$DEVASCENT_HOME" /tmp/hermes-middleware-test/nemo-relay
 
-cat > "$HERMES_HOME/config.yaml" <<'YAML'
+cat > "$DEVASCENT_HOME/config.yaml" <<'YAML'
 model:
   provider: custom
   default: qwen3.6:35b
@@ -494,7 +494,7 @@ enabled = true
 mode = "observe_only"
 TOML
 
-export HERMES_NEMO_RELAY_PLUGINS_TOML=/tmp/hermes-middleware-test/nemo-relay/plugins.toml
+export DEVASCENT_NEMO_RELAY_PLUGINS_TOML=/tmp/hermes-middleware-test/nemo-relay/plugins.toml
 
 hermes chat \
   --query 'Use the terminal tool exactly once to run printf middleware_execution_ok. Then reply with exactly the command output.' \

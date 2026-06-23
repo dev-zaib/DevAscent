@@ -16,7 +16,7 @@ cron 子系统提供定时任务执行能力——从简单的单次延迟到带
 | `cron/scheduler.py` | 调度器循环——到期任务检测、执行、重复计数跟踪 |
 | `tools/cronjob_tools.py` | 面向模型的 `cronjob` 工具注册与处理器 |
 | `gateway/run.py` | Gateway 集成——在长运行循环中触发 cron tick |
-| `hermes_cli/cron.py` | CLI `hermes cron` 子命令 |
+| `devascent_cli/cron.py` | CLI `hermes cron` 子命令 |
 
 ## 调度模型
 
@@ -33,7 +33,7 @@ cron 子系统提供定时任务执行能力——从简单的单次延迟到带
 
 ## 任务存储
 
-任务存储在 `~/.hermes/cron/jobs.json` 中，采用原子写入语义（先写入临时文件，再重命名）。每条任务记录包含：
+任务存储在 `~/.devascent/cron/jobs.json` 中，采用原子写入语义（先写入临时文件，再重命名）。每条任务记录包含：
 
 ```json
 {
@@ -135,7 +135,7 @@ cron 任务可通过 `skills` 字段附加一个或多个技能。执行时：
 任务还可通过 `script` 字段附加 Python 脚本。该脚本在每次 agent 轮次*之前*运行，其 stdout 作为上下文注入到 prompt 中。这支持数据采集和变更检测模式：
 
 ```python
-# ~/.hermes/scripts/check_competitors.py
+# ~/.devascent/scripts/check_competitors.py
 import requests, json
 # 获取竞争对手发布说明，与上次运行结果进行差异比对
 # 将摘要打印到 stdout——agent 进行分析并报告
@@ -144,7 +144,7 @@ import requests, json
 脚本超时默认为 120 秒。`_get_script_timeout()` 通过三层链路解析限制：
 
 1. **模块级覆盖** — `_SCRIPT_TIMEOUT`（用于测试/monkeypatching）。仅在与默认值不同时使用。
-2. **环境变量** — `HERMES_CRON_SCRIPT_TIMEOUT`
+2. **环境变量** — `DEVASCENT_CRON_SCRIPT_TIMEOUT`
 3. **配置** — `config.yaml` 中的 `cron.script_timeout_seconds`（通过 `load_config()` 读取）
 4. **默认值** — 120 秒
 
@@ -164,7 +164,7 @@ Cron 任务结果可投递到任何受支持的平台：
 | 目标 | 语法 | 示例 |
 |--------|--------|---------|
 | 来源聊天 | `origin` | 投递到创建该任务的聊天 |
-| 本地文件 | `local` | 保存到 `~/.hermes/cron/output/` |
+| 本地文件 | `local` | 保存到 `~/.devascent/cron/output/` |
 | Telegram | `telegram` 或 `telegram:<chat_id>` | `telegram:-1001234567890` |
 | Discord | `discord` 或 `discord:#channel` | `discord:#engineering` |
 | Slack | `slack` | 投递到 Slack 主频道 |
