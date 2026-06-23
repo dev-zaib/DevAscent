@@ -1,45 +1,47 @@
-"""PresentChallenge node — retrieves and presents next challenge."""
+"""PresentChallenge node — RAG-driven challenge selection."""
 from datetime import datetime, timezone
 from devascent.assessment.state import DevAscentState
+from devascent.rag.retriever import retriever
+from devascent.rag.seed_data import SEED_CHALLENGES
 
 
-DEFAULT_CHALLENGE = {
-    "id": "challenge-baseline-001",
-    "title": "Rate-Limited API Proxy",
-    "description": (
-        "Build a TypeScript API proxy that sits between a client and an "
-        "external weather API. The proxy must enforce rate limiting — "
-        "no more than 5 requests per second per client IP. Use an "
-        "in-memory store (Map or object) for request counting. "
-        "Return HTTP 429 when rate limit is exceeded."
-    ),
-    "difficulty": "easy",
-    "target_skills": ["rate_limiting", "api_design"],
-    "target_level": "BASELINE",
-    "rubric": {
-        "rate_limiting": {"weight": 40, "description": "Correct rate limiting logic"},
-        "api_design": {"weight": 30, "description": "Clean proxy architecture"},
-        "error_handling": {"weight": 20, "description": "Proper HTTP status codes"},
-        "code_quality": {"weight": 10, "description": "Readable, well-structured code"},
-    },
-    "hints": [
-        "Use a Map<string, number[]> to track request timestamps per client IP",
-        "Clean up old entries periodically to avoid memory leaks",
-    ],
-}
+async def present_challenge(state: DevAscentState) -> dict:
+    """Select and present the next challenge based on user's skills matrix.
 
+    Uses RAG retriever: embeds user's weakest skills, searches pgvector
+    for matching challenges, deduplicates against attempted challenges.
 
-def present_challenge(state: DevAscentState) -> dict:
-    """Select and present the next challenge based on skills matrix.
-
-    In production this calls the RAG retriever to find the best
-    challenge matching the user's weak spots. For now, returns the
-    default baseline challenge on first attempt.
+    Falls back to the first un-attempted challenge if no vector match.
     """
-    challenge = DEFAULT_CHALLENGE
+    skills_matrix = state.get("skills_matrix", {})
+    history = state.get("evaluation_history", [])
+
+    attempted_ids = [entry.get("challenge_id", "") for entry in history]
+    current_level = state.get("current_level", "BASELINE")
+
+    # Try RAG retrieval
+    challenge = await retriever.retrieve(
+        skills_matrix=skills_matrix,
+        attempted_ids=attempted_ids,
+    )
+
+    # Fallback: first challenge matching current level, not attempted
+    if not challenge:
+        for chal in SEED_CHALLENGES:
+            if chal["title"] in attempted_ids:
+                continue
+            if chal.get("target_level") == current_level:
+                challenge = chal
+                break
+
+    # Ultimate fallback
+    if not challenge:
+        challenge = SEED_CHALLENGES[0]
+
+    challenge_id = challenge["title"]
 
     state_update = {
-        "active_challenge_id": challenge["id"],
+        "active_challenge_id": challenge_id,
         "active_challenge_data": challenge,
         "challenge_attempt": state.get("challenge_attempt", 0) + 1,
         "last_evaluation_timestamp": datetime.now(timezone.utc).isoformat(),
