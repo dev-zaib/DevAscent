@@ -1,12 +1,9 @@
 {
-  "name": "hermes-agent",
-  "version": "1.0.0",
-  "description": "An AI agent with advanced tool-calling capabilities, featuring a flexible toolsets system for organizing and managing tools.",
+  "name": "devascent",
+  "version": "0.1.0",
+  "description": "Elite engineering assessment platform — production-grade skill evaluation with adaptive escalation.",
   "private": true,
   "workspaces": [
-    "apps/*",
-    "ui-tui",
-    "ui-tui/packages/*",
     "web"
   ],
   "scripts": {
@@ -24,7 +21,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/NousResearch/Hermes-Agent.git"
+    "url": "git+https://github.com/dev-zaib/DevAscent.git"
   },
   "license": "MIT",
   "bugs": {
