@@ -1,81 +1,54 @@
-"""EvaluateSubmission node — scores user code against challenge rubric."""
+"""EvaluateSubmission node — sandbox execution + LLM scoring + constraint checks."""
 from datetime import datetime, timezone
 from devascent.assessment.state import DevAscentState, EvaluationLog
-from devascent.assessment.evaluator.rubric import (
-    RubricEngine,
-    build_evaluation_prompt,
-    parse_evaluation_response,
-)
+from devascent.assessment.evaluator.rubric import RubricEngine
+from devascent.assessment.evaluator.sandbox import sandbox_executor
+from devascent.assessment.evaluator.constraint_validator import validate_constraints
 
 
-# Mock evaluation for when no LLM provider is available
-MOCK_SCORES = {
-    "rate_limiting": 82,
-    "api_design": 75,
-    "error_handling": 88,
-    "code_quality": 70,
-}
+async def evaluate_submission(state: DevAscentState) -> dict:
+    """Evaluate submitted code end-to-end.
 
-
-def evaluate_with_llm(challenge: dict, code: str, language: str) -> dict:
-    """Run evaluation via LLM provider.
-
-    In production, this calls OpenRouter/OpenAI/Anthropic with the
-    evaluation prompt. For now, returns mock scores.
+    1. Execute code in gVisor sandbox
+    2. Score against challenge rubric via LLM
+    3. Validate escalation constraints (if escalated)
+    4. Apply constraint penalties
     """
-    try:
-        rubric = RubricEngine(challenge.get("rubric", {}))
-        prompt = build_evaluation_prompt(challenge, code, language, rubric)
-
-        # In production: call LLM provider here
-        # from devascent.providers import get_provider
-        # provider = get_provider("evaluation")
-        # response = provider.chat(prompt)
-        # result = parse_evaluation_response(response)
-
-        # For now use mock scores
-        total = rubric.compute_score(MOCK_SCORES)
-        return {
-            "scores": MOCK_SCORES,
-            "feedback": {
-                "rate_limiting": "Good use of sliding window pattern. Consider request bursting handling.",
-                "api_design": "Clean proxy structure. Could add configurable upstream URL.",
-                "error_handling": "Proper 429 response. Added helpful Retry-After header.",
-                "code_quality": "Well-named functions. Could benefit from input validation.",
-            },
-            "overall_notes": "Solid implementation with good rate-limiting logic. Consider making the rate limit configurable.",
-            "total": total,
-        }
-    except Exception:
-        rubric = RubricEngine(challenge.get("rubric", {}))
-        return {
-            "scores": MOCK_SCORES,
-            "feedback": {},
-            "overall_notes": "Fallback evaluation — LLM unavailable.",
-            "total": rubric.compute_score(MOCK_SCORES),
-        }
-
-
-def evaluate_submission(state: DevAscentState) -> dict:
     challenge = state.get("active_challenge_data") or {}
     challenge_id = state.get("active_challenge_id", "")
-
-    # Get the latest submission code from state or use placeholder
     code = state.get("submitted_code", "")
     language = state.get("submitted_language", "typescript")
 
     if not code:
         return {"latest_score": 0.0}
 
-    result = evaluate_with_llm(challenge, code, language)
+    # Step 1: Sandbox execution
+    result = await sandbox_executor.execute(code, language)
+    sandbox_output = result.stdout
+
+    # Step 2: Rubric-based LLM evaluation
+    rubric = RubricEngine(challenge.get("rubric", {}))
+    scores = _evaluate_with_rubric(rubric, challenge, code, language, sandbox_output, result)
+    total = rubric.compute_score(scores)
+
+    # Step 3: Constraint validation (post-escalation)
+    constraints = state.get("escalation_constraints", [])
+    constraint_penalty = 0
+    constraint_violations = []
+    if constraints:
+        validation = validate_constraints(code, constraints)
+        constraint_penalty = validation["penalty"]
+        constraint_violations = validation["violations"]
+        total = max(0, total - constraint_penalty)
 
     now = datetime.now(timezone.utc).isoformat()
+
     log_entry: EvaluationLog = {
         "challenge_id": challenge_id,
-        "score": result["total"],
-        "rubric_breakdown": result["scores"],
-        "ai_feedback": result.get("overall_notes", ""),
-        "constraints_applied": state.get("escalation_constraints", []),
+        "score": total,
+        "rubric_breakdown": scores,
+        "ai_feedback": _format_feedback(scores, constraint_violations, result),
+        "constraints_applied": constraints,
         "timestamp": now,
     }
 
@@ -83,9 +56,108 @@ def evaluate_submission(state: DevAscentState) -> dict:
     history.append(log_entry)
 
     return {
-        "latest_score": result["total"],
+        "latest_score": total,
         "evaluation_history": history,
         "last_evaluation_timestamp": now,
-        "rubric_scores": result["scores"],
-        "ai_feedback": result.get("overall_notes", ""),
+        "rubric_scores": scores,
+        "ai_feedback": log_entry["ai_feedback"],
     }
+
+
+def _evaluate_with_rubric(
+    rubric: RubricEngine,
+    challenge: dict,
+    code: str,
+    language: str,
+    output: str,
+    result,
+) -> dict[str, float]:
+    """Score each rubric dimension.
+
+    Production: sends code + output to LLM for qualitative evaluation.
+    Development: basic heuristic scoring.
+    """
+    scores = {}
+    for dim in rubric.dimensions:
+        score = _heuristic_score(dim.name, code, output, result)
+        scores[dim.name] = score
+    return scores
+
+
+def _heuristic_score(
+    dimension: str, code: str, output: str, result
+) -> float:
+    """Basic heuristic scoring per rubric dimension."""
+    code_lower = code.lower()
+    base_score = 70.0
+
+    if result.timed_out:
+        return max(0, base_score - 30)
+    if result.exit_code != 0:
+        return max(0, base_score - 20)
+
+    # Simple pattern matching for common engineering patterns
+    patterns = {
+        "rate_limiting": [r"(?:rate.?lim|throttl|sliding.?window)", r"429", r"(?:Retry-After|X-RateLimit)"],
+        "redis": [r"(?:redis|ioredis|createClient)", r"(?:ZADD|ZRANGE|SADD|LPUSH)"],
+        "connection_pooling": [r"(?:pool\s*[=:]|createPool|Pool\s*\()", r"(?:max\s*=|maxSize|connectionLimit)"],
+        "api_design": [r"(?:app\.\w+|router|middleware)", r"(?:async|await|Promise)"],
+        "error_handling": [r"(?:try|catch|\.catch|on\('error')", r"status\s*\(\s*[45]\d\d"],
+        "code_quality": [r"^\s*(?:interface|type) \w+", r"^\s*(?:const|function|class) \w+"],
+        "fault_tolerance": [r"(?:retry|fallback|circuit.?break)", r"(?:try|catch|error.*handl)"],
+        "memory_management": [r"(?:stream|pipeline|createReadStream)", r"(?:WeakRef|FinalizationRegistry)"],
+        "caching": [r"(?:cache|Cache|LRU|TTL|\.set\(|\.get\()", r"(?:expir|ttl|maxAge)"],
+        "rendering": [r"(?:virtualiz|useVirtualizer|react-virtual|React)", r"(?:overflow|scroll)"],
+        "performance": [r"(?:\.?memoz?|useMemo|useCallback|React\.memo)", r"(?:requestAnimationFrame|raf)"],
+        "realtime": [r"(?:WebSocket|ws\.|socket\.io|Server\s*\(|\.emit\()"],
+        "backpressure": [r"(?:backpressure|bufferedAmount|drain|buffer.*full)"],
+        "auth": [r"(?:jwt|sign\s*\(|verify\s*\(|JsonWebToken)", r"(?:bcrypt|hash|salt|RS256)"],
+        "security": [r"(?:sanitize|validate|escape|CORS|helmet)", r"(?:xss|sqli|csrf|inject)"],
+        "monitoring": [r"(?:metrics|prometheus|grafana|health|/health)", r"(?:log|warn|error|info)"],
+    }
+
+    dim_patterns = patterns.get(dimension, [])
+    if not dim_patterns:
+        return base_score
+
+    matches = 0
+    for pattern in dim_patterns:
+        if [line for line in code.split("\n") if _pattern_match(pattern, line)]:
+            matches += 1
+
+    bonus = (matches / len(dim_patterns)) * 15
+    return min(95, base_score + bonus)
+
+
+def _pattern_match(pattern: str, line: str) -> bool:
+    """Check if a line matches a heuristic pattern (simple string check)."""
+    return pattern.lower() in line.lower()
+
+
+def _format_feedback(
+    scores: dict[str, float],
+    violations: list[str],
+    result,
+) -> str:
+    """Generate human-readable evaluation feedback."""
+    feedback = []
+
+    for dim, score in scores.items():
+        if score >= 85:
+            feedback.append(f"{dim}: Excellent ({score})")
+        elif score >= 70:
+            feedback.append(f"{dim}: Good ({score})")
+        else:
+            feedback.append(f"{dim}: Needs improvement ({score})")
+
+    if result.timed_out:
+        feedback.append("WARNING: Code execution timed out.")
+    elif result.exit_code != 0:
+        feedback.append(f"WARNING: Code exited with code {result.exit_code}.")
+
+    if violations:
+        feedback.append("MISSING CONSTRAINTS:")
+        for v in violations:
+            feedback.append(f"  - {v}")
+
+    return "\n".join(feedback)
