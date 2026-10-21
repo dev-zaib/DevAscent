@@ -523,3 +523,166 @@ SEED_CHALLENGES = [
         ],
     },
 ]
+
+
+# ---------------------------------------------------------------------------
+# Beginner tier — gentle BASELINE on-ramp. Small, self-contained fundamentals
+# so a newcomer can score, learn the loop, and build confidence before the
+# intermediate/hard enterprise scenarios above.
+# ---------------------------------------------------------------------------
+BEGINNER_CHALLENGES = [
+    {
+        "title": "Debounce a Function",
+        "description": (
+            "Write a `debounce(fn, waitMs)` helper. It returns a new function "
+            "that delays calling `fn` until `waitMs` has passed since the last "
+            "call. If it's called again before the wait elapses, the timer "
+            "resets. Used everywhere: search-as-you-type, resize handlers, "
+            "auto-save. Bonus: preserve `this` and forward arguments."
+        ),
+        "difficulty": "beginner",
+        "target_skills": ["closures", "timers", "code_quality"],
+        "target_level": "BASELINE",
+        "rubric": {
+            "closures": {"weight": 40, "description": "Correct use of a closed-over timer id"},
+            "timers": {"weight": 35, "description": "Resets the timer on each call; fires once after quiet period"},
+            "code_quality": {"weight": 25, "description": "Forwards args + this, readable"},
+        },
+        "hints": [
+            "Keep a timer id in the closure; clearTimeout it at the start of each call.",
+            "Use a regular function (not arrow) if you want to forward `this`.",
+        ],
+        "solution_checklist": [
+            "Returns a new function",
+            "clearTimeout then setTimeout each call",
+            "Calls fn once after the quiet period",
+            "Forwards arguments",
+        ],
+        "entry": "debounce",
+        "test_harness": (
+            "let calls=0,lastArg=null;\n"
+            "const d=debounce((x)=>{calls++;lastArg=x;},50);\n"
+            "d(1);d(2);d(3);\n"
+            "check('not called immediately', calls===0, 'calls='+calls, 0);\n"
+            "await sleep(90);\n"
+            "check('called once after the quiet period', calls===1, 'calls='+calls, 1);\n"
+            "check('uses the latest arguments', lastArg===3, 'lastArg='+lastArg, 3);\n"
+            "d(); await sleep(20); d(); await sleep(90);\n"
+            "check('timer resets on repeated calls', calls===2, 'total calls='+calls, 2);\n"
+        ),
+    },
+    {
+        "title": "Group an Array of Objects by Key",
+        "description": (
+            "Write `groupBy(items, key)` that returns an object mapping each "
+            "distinct value of `item[key]` to the array of items with that "
+            "value. Example: groupBy(users, 'role') -> { admin: [...], user: "
+            "[...] }. Handle an empty array. Keep it pure (no mutation of input)."
+        ),
+        "difficulty": "beginner",
+        "target_skills": ["data_transformation", "iteration", "code_quality"],
+        "target_level": "BASELINE",
+        "rubric": {
+            "data_transformation": {"weight": 45, "description": "Correct grouping into buckets"},
+            "iteration": {"weight": 30, "description": "Single clean pass (reduce or for-of)"},
+            "code_quality": {"weight": 25, "description": "Pure, handles empty input, readable"},
+        },
+        "hints": [
+            "reduce into an accumulator object; create the bucket array if missing.",
+            "Don't mutate the input array.",
+        ],
+        "solution_checklist": [
+            "Returns object keyed by item[key]",
+            "Each value is an array",
+            "Handles empty input",
+            "No input mutation",
+        ],
+        "entry": "groupBy",
+        "test_harness": (
+            "const users=[{role:'admin',n:1},{role:'user',n:2},{role:'admin',n:3}];\n"
+            "const g=groupBy(users,'role');\n"
+            "check('two admins grouped', g.admin && g.admin.length===2, JSON.stringify(g), '2 admins');\n"
+            "check('one user grouped', g.user && g.user.length===1, JSON.stringify(g), '1 user');\n"
+            "check('empty input -> empty object', JSON.stringify(groupBy([],'x'))==='{}', JSON.stringify(groupBy([],'x')), '{}');\n"
+            "check('does not mutate input', users.length===3, 'len='+users.length, 3);\n"
+        ),
+    },
+    {
+        "title": "Retry with Exponential Backoff",
+        "description": (
+            "Write `retry(fn, { retries, baseMs })` that calls async `fn` and, "
+            "if it rejects, retries up to `retries` times. Wait baseMs, then "
+            "2x, 4x, 8x… between attempts (exponential backoff). If all "
+            "attempts fail, reject with the last error. This is the backbone "
+            "of resilient network calls."
+        ),
+        "difficulty": "beginner",
+        "target_skills": ["async_flows", "error_handling", "resilience"],
+        "target_level": "BASELINE",
+        "rubric": {
+            "async_flows": {"weight": 35, "description": "Correct async/await loop with awaited delays"},
+            "error_handling": {"weight": 35, "description": "Retries on reject, rethrows last error"},
+            "resilience": {"weight": 30, "description": "Exponential delay doubling each attempt"},
+        },
+        "hints": [
+            "Loop attempt = 0..retries; await fn() in a try/catch.",
+            "delay = baseMs * 2 ** attempt; await a sleep(delay) helper.",
+        ],
+        "solution_checklist": [
+            "Returns fn result on success",
+            "Retries up to N times",
+            "Delay doubles each attempt",
+            "Rejects with last error after exhausting retries",
+        ],
+        "entry": "retry",
+        "test_harness": (
+            "let n=0;\n"
+            "const flaky=async()=>{ n++; if(n<3) throw new Error('boom'); return 'ok'; };\n"
+            "const r=await retry(flaky,{retries:5,baseMs:5});\n"
+            "check('returns value once it succeeds', r==='ok', 'got '+r, 'ok');\n"
+            "check('retried until success', n===3, 'attempts='+n, 3);\n"
+            "let m=0,threw=false;\n"
+            "try{ await retry(async()=>{m++;throw new Error('always');},{retries:2,baseMs:5}); }catch(e){ threw=true; }\n"
+            "check('rejects after exhausting retries', threw, 'threw='+threw, true);\n"
+            "check('tried initial + 2 retries = 3', m===3, 'attempts='+m, 3);\n"
+        ),
+    },
+    {
+        "title": "In-Memory Cache with TTL",
+        "description": (
+            "Build a tiny `TTLCache` with `set(key, value, ttlMs)` and "
+            "`get(key)`. `get` returns the value if it hasn't expired, else "
+            "`undefined` (and forgets it). No external libraries. This is the "
+            "idea behind every caching layer you'll build later."
+        ),
+        "difficulty": "beginner",
+        "target_skills": ["caching", "data_structures", "time_handling"],
+        "target_level": "BASELINE",
+        "rubric": {
+            "caching": {"weight": 40, "description": "get returns fresh values, expires stale ones"},
+            "data_structures": {"weight": 30, "description": "Map storing value + expiry timestamp"},
+            "time_handling": {"weight": 30, "description": "Correct expiry math with Date.now()"},
+        },
+        "hints": [
+            "Store { value, expiresAt: Date.now() + ttlMs } in a Map.",
+            "On get, compare Date.now() to expiresAt; delete if expired.",
+        ],
+        "solution_checklist": [
+            "set stores value + expiry",
+            "get returns value before expiry",
+            "get returns undefined after expiry",
+            "Expired keys are removed",
+        ],
+        "entry": "TTLCache",
+        "test_harness": (
+            "const c=new TTLCache();\n"
+            "c.set('k','v',50);\n"
+            "check('get returns fresh value', c.get('k')==='v', 'got '+c.get('k'), 'v');\n"
+            "await sleep(90);\n"
+            "check('value expires after ttl', c.get('k')===undefined, 'got '+String(c.get('k')), 'undefined');\n"
+        ),
+    },
+]
+
+# Beginners first — gentle on-ramp before the enterprise scenarios.
+SEED_CHALLENGES = BEGINNER_CHALLENGES + SEED_CHALLENGES

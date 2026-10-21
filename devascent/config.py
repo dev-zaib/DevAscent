@@ -32,6 +32,14 @@ class AssessmentConfig:
         return os.getenv("ANTHROPIC_API_KEY")
 
     @property
+    def deepseek_api_key(self) -> str | None:
+        return os.getenv("DEEPSEEK_API_KEY")
+
+    @property
+    def deepseek_model(self) -> str:
+        return os.getenv("DEEPSEEK_MODEL", "deepseek-chat")
+
+    @property
     def embedding_model(self) -> str:
         return os.getenv("DEVASCENT_EMBEDDING_MODEL", "text-embedding-3-small")
 

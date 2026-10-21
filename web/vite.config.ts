@@ -85,6 +85,12 @@ export default defineConfig({
   build: {
     outDir: "../devascent_cli/web_dist",
     emptyOutDir: true,
+    rollupOptions: {
+      input: {
+        index: path.resolve(__dirname, "index.html"),
+        devascent: path.resolve(__dirname, "devascent.html"),
+      },
+    },
   },
   server: {
     proxy: {

@@ -32,6 +32,11 @@ class DevAscentState(TypedDict, total=False):
     rubric_scores: dict[str, float]
     ai_feedback: str
     escalation_constraints: list[str]
+    # Coach fields (populated by the CoachProgress node)
+    skill_deltas: dict[str, float]
+    coach_report: dict | None
+    curriculum: list[str]
+    coach_error: str
 
 
 # Pydantic models for API request/response validation

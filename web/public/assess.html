@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DevAscent — Ascend.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #07070a;
+    --bg-2: #0b0b11;
+    --panel: rgba(255,255,255,0.025);
+    --panel-2: rgba(255,255,255,0.04);
+    --line: rgba(255,255,255,0.07);
+    --line-2: rgba(255,255,255,0.12);
+    --txt: #f4f4f6;
+    --txt-2: #a1a1ac;
+    --txt-3: #6c6c78;
+    --accent: #7c6cff;
+    --accent-2: #b06cff;
+    --accent-glow: rgba(124,108,255,0.45);
+    --good: #34d399;
+    --mid: #fbbf24;
+    --bad: #fb7185;
+    --radius: 16px;
+    --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    font-family: var(--font);
+    background:
+      radial-gradient(1200px 700px at 78% -10%, rgba(124,108,255,0.18), transparent 60%),
+      radial-gradient(900px 600px at 10% 110%, rgba(176,108,255,0.12), transparent 55%),
+      var(--bg);
+    color: var(--txt);
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+    letter-spacing: -0.01em;
+  }
+  ::selection { background: var(--accent-glow); }
+  button { font-family: inherit; cursor: pointer; border: none; }
+  ::-webkit-scrollbar { width: 9px; height: 9px; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.09); border-radius: 99px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.16); }
+
+  /* ---------- Onboarding ---------- */
+  #onboard {
+    position: fixed; inset: 0; z-index: 40;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 30px; padding: 24px; text-align: center;
+    transition: opacity .5s ease, transform .5s ease;
+  }
+  #onboard.hide { opacity: 0; transform: scale(1.03); pointer-events: none; }
+  .mark {
+    font-size: 13px; font-weight: 700; letter-spacing: .28em; text-transform: uppercase;
+    color: var(--txt-3);
+  }
+  .hero { font-size: clamp(44px, 8vw, 88px); font-weight: 800; line-height: 0.98; letter-spacing: -0.04em; }
+  .hero .grad {
+    background: linear-gradient(110deg, var(--accent), var(--accent-2) 70%);
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .sub { color: var(--txt-2); font-size: 17px; max-width: 460px; line-height: 1.6; }
+  .start-row { display: flex; gap: 10px; margin-top: 6px; }
+  .field {
+    background: var(--panel-2); border: 1px solid var(--line-2); color: var(--txt);
+    padding: 0 18px; height: 52px; border-radius: 13px; font-size: 15px; width: 240px; outline: none;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .field:focus { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-glow); }
+  .btn {
+    height: 52px; padding: 0 26px; border-radius: 13px; font-size: 15px; font-weight: 600;
+    color: #fff; background: linear-gradient(120deg, var(--accent), var(--accent-2));
+    box-shadow: 0 8px 30px -8px var(--accent-glow); transition: transform .15s, box-shadow .2s, opacity .2s;
+    display: inline-flex; align-items: center; gap: 9px;
+  }
+  .btn:hover { transform: translateY(-1px); box-shadow: 0 14px 40px -10px var(--accent-glow); }
+  .btn:active { transform: translateY(0); }
+  .btn:disabled { opacity: .55; pointer-events: none; }
+  .btn.ghost { background: var(--panel-2); border: 1px solid var(--line-2); box-shadow: none; color: var(--txt); }
+  .btn.ghost:hover { border-color: var(--line-2); background: var(--panel); }
+  .feats { display: flex; gap: 28px; margin-top: 14px; color: var(--txt-3); font-size: 13px; flex-wrap: wrap; justify-content: center; }
+  .feats b { color: var(--txt-2); font-weight: 600; }
+
+  /* ---------- App shell ---------- */
+  #app { display: none; height: 100vh; flex-direction: column; }
+  #app.show { display: flex; animation: rise .5s ease both; }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+  .topbar {
+    display: flex; align-items: center; gap: 18px; padding: 14px 22px;
+    border-bottom: 1px solid var(--line); flex-shrink: 0;
+    backdrop-filter: blur(8px);
+  }
+  .logo { font-weight: 800; font-size: 17px; letter-spacing: -0.02em; }
+  .logo .dot { color: var(--accent-2); }
+  .topbar .spacer { flex: 1; }
+  .stat { display: flex; align-items: center; gap: 9px; }
+  .stat .ring { width: 38px; height: 38px; }
+  .stat-meta { line-height: 1.1; }
+  .stat-meta .k { font-size: 10px; text-transform: uppercase; letter-spacing: .1em; color: var(--txt-3); }
+  .stat-meta .v { font-size: 15px; font-weight: 700; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 7px; height: 34px; padding: 0 13px;
+    border-radius: 99px; border: 1px solid var(--line-2); background: var(--panel-2);
+    font-size: 12.5px; font-weight: 600;
+  }
+  .pill .flame { filter: drop-shadow(0 0 6px rgba(251,146,60,.6)); }
+  .lvl-badge {
+    display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 14px; border-radius: 99px;
+    font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+    background: linear-gradient(120deg, rgba(124,108,255,.22), rgba(176,108,255,.22));
+    border: 1px solid rgba(124,108,255,.4); color: #d9d3ff;
+  }
+
+  .xpwrap { width: 180px; }
+  .xpwrap .xptop { display: flex; justify-content: space-between; font-size: 10.5px; color: var(--txt-3); margin-bottom: 5px; }
+  .xpbar { height: 7px; border-radius: 99px; background: rgba(255,255,255,.08); overflow: hidden; }
+  .xpbar > i { display: block; height: 100%; width: 0%; border-radius: 99px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width .9s cubic-bezier(.2,.8,.2,1); }
+
+  /* ---------- Layout ---------- */
+  .grid { flex: 1; display: grid; grid-template-columns: 1.05fr 1.25fr 0.95fr; min-height: 0; }
+  .col { min-height: 0; overflow-y: auto; padding: 22px; }
+  .col.mid { border-left: 1px solid var(--line); border-right: 1px solid var(--line); display: flex; flex-direction: column; padding: 0; }
+  .eyebrow { font-size: 10.5px; text-transform: uppercase; letter-spacing: .14em; color: var(--txt-3); margin-bottom: 12px; font-weight: 600; }
+
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; margin-bottom: 16px; }
+  .card.glow { box-shadow: 0 0 0 1px rgba(124,108,255,.12), 0 20px 60px -30px var(--accent-glow); }
+
+  /* Challenge */
+  .ch-title { font-size: 21px; font-weight: 700; line-height: 1.2; margin-bottom: 10px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+  .chip { font-size: 11px; padding: 4px 10px; border-radius: 99px; background: var(--panel-2);
+    border: 1px solid var(--line); color: var(--txt-2); }
+  .chip.diff { color: #ffd9a8; border-color: rgba(251,191,36,.3); }
+  .ch-desc { color: var(--txt-2); font-size: 14px; line-height: 1.7; white-space: pre-wrap; }
+  .rubric-item { display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 11px 13px; border-radius: 11px; background: var(--panel-2); border: 1px solid var(--line); margin-bottom: 7px; }
+  .rubric-item .rn { font-size: 13px; font-weight: 600; }
+  .rubric-item .rd { font-size: 11.5px; color: var(--txt-3); margin-top: 2px; }
+  .rubric-item .rw { font-family: var(--mono); font-size: 11px; color: var(--accent-2); flex-shrink: 0; }
+  .hint { font-size: 12.5px; color: var(--txt-2); padding: 9px 12px; border-left: 2px solid var(--accent);
+    background: rgba(124,108,255,.06); border-radius: 0 8px 8px 0; margin-bottom: 7px; }
+
+  /* Editor */
+  .ed-head { display: flex; align-items: center; gap: 10px; padding: 13px 18px; border-bottom: 1px solid var(--line); }
+  .ed-head .dots { display: flex; gap: 6px; }
+  .ed-head .dots i { width: 11px; height: 11px; border-radius: 99px; display: block; }
+  .ed-head select { background: #14141c; color: var(--txt); border: 1px solid var(--line-2);
+    border-radius: 8px; padding: 6px 30px 6px 12px; font-size: 12px; font-family: var(--mono); outline: none;
+    cursor: pointer; appearance: none; -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23a1a1ac' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 11px center; }
+  .ed-head select:hover { border-color: var(--accent); }
+  .ed-head select option { background: #14141c; color: #f4f4f6; padding: 8px; }
+  textarea {
+    flex: 1; width: 100%; resize: none; outline: none; border: none;
+    background: transparent; color: #e8e8ef; font-family: var(--mono); font-size: 13.5px;
+    line-height: 1.75; padding: 18px 20px; tab-size: 2;
+  }
+  textarea::placeholder { color: var(--txt-3); }
+  .ed-foot { display: flex; align-items: center; gap: 12px; padding: 13px 18px; border-top: 1px solid var(--line); }
+  .ed-foot .meta { font-size: 11.5px; color: var(--txt-3); font-family: var(--mono); }
+  .ed-foot .spacer { flex: 1; }
+
+  /* Insights */
+  .radar-wrap { display: flex; align-items: center; justify-content: center; padding: 4px 0 10px; }
+  .skill-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .skill-row .nm { font-size: 12.5px; width: 110px; color: var(--txt-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .skill-row .track { flex: 1; height: 7px; border-radius: 99px; background: rgba(255,255,255,.07); overflow: hidden; }
+  .skill-row .track > i { display: block; height: 100%; width: 0%; border-radius: 99px; transition: width 1s cubic-bezier(.2,.8,.2,1); }
+  .skill-row .sc { font-family: var(--mono); font-size: 11.5px; width: 30px; text-align: right; color: var(--txt-2); }
+
+  .coach-line { font-size: 13.5px; color: var(--txt); line-height: 1.6; }
+  .mom { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 99px; }
+  .mom.up { color: var(--good); background: rgba(52,211,153,.12); }
+  .mom.down { color: var(--bad); background: rgba(251,113,133,.12); }
+  .mom.flat { color: var(--txt-2); background: var(--panel-2); }
+  .nextup { display: flex; gap: 11px; padding: 11px 13px; border-radius: 12px; background: var(--panel-2);
+    border: 1px solid var(--line); margin-bottom: 8px; align-items: flex-start; }
+  .nextup .idx { width: 22px; height: 22px; border-radius: 7px; flex-shrink: 0; display: grid; place-items: center;
+    font-size: 11px; font-weight: 700; background: linear-gradient(120deg, var(--accent), var(--accent-2)); color: #fff; }
+  .nextup .nu-sk { font-size: 13px; font-weight: 600; }
+  .nextup .nu-rs { font-size: 11.5px; color: var(--txt-3); margin-top: 2px; }
+  .due { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; padding: 2px 6px;
+    border-radius: 5px; background: rgba(251,113,133,.16); color: var(--bad); margin-left: 6px; }
+
+  .empty { color: var(--txt-3); font-size: 13px; text-align: center; padding: 22px 8px; line-height: 1.6; }
+
+  /* Score reveal overlay */
+  #reveal { position: fixed; inset: 0; z-index: 60; display: none; align-items: center; justify-content: center;
+    background: rgba(5,5,8,.72); backdrop-filter: blur(10px); }
+  #reveal.show { display: flex; animation: fade .3s ease; }
+  @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+  .reveal-card { width: min(440px, 92vw); background: linear-gradient(180deg, var(--bg-2), var(--bg));
+    border: 1px solid var(--line-2); border-radius: 22px; padding: 30px; text-align: center;
+    box-shadow: 0 40px 120px -30px var(--accent-glow); animation: pop .45s cubic-bezier(.2,1.2,.3,1) both; }
+  @keyframes pop { from { transform: scale(.9) translateY(10px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .big-score { font-size: 84px; font-weight: 800; line-height: 1; letter-spacing: -0.04em; }
+  .big-score small { font-size: 26px; color: var(--txt-3); font-weight: 600; }
+  .verdict { font-size: 13px; text-transform: uppercase; letter-spacing: .12em; font-weight: 700; margin-top: 6px; }
+  .reveal-fb { color: var(--txt-2); font-size: 14px; line-height: 1.65; margin: 18px 0 22px; text-align: left; }
+  .rv-tags { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-bottom: 20px; }
+  .escalate-note { font-size: 12.5px; color: var(--accent-2); font-weight: 600; margin-bottom: 16px;
+    display: flex; align-items: center; justify-content: center; gap: 7px; }
+  .spin { width: 17px; height: 17px; border: 2px solid rgba(255,255,255,.25); border-top-color: #fff;
+    border-radius: 99px; animation: sp .7s linear infinite; }
+  @keyframes sp { to { transform: rotate(360deg); } }
+
+  /* Run / test panel */
+  #runPanel { flex-shrink: 0; max-height: 0; overflow: hidden; transition: max-height .35s ease; border-top: 0 solid var(--line); }
+  #runPanel.open { max-height: 42vh; overflow-y: auto; border-top: 1px solid var(--line); }
+  .run-inner { padding: 14px 18px; }
+  .run-summary { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .run-summary .big { font-size: 15px; font-weight: 700; }
+  .run-summary .pf { font-family: var(--mono); font-size: 12px; padding: 3px 9px; border-radius: 7px; }
+  .run-summary .pf.ok { background: rgba(52,211,153,.14); color: var(--good); }
+  .run-summary .pf.no { background: rgba(251,113,133,.14); color: var(--bad); }
+  .run-bar { flex: 1; height: 6px; border-radius: 99px; background: rgba(255,255,255,.08); overflow: hidden; }
+  .run-bar > i { display: block; height: 100%; background: linear-gradient(90deg,var(--good),#22d3ee); transition: width .6s ease; }
+  .tc { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border-radius: 10px;
+    border: 1px solid var(--line); background: var(--panel-2); margin-bottom: 7px;
+    animation: tcIn .3s ease both; }
+  @keyframes tcIn { from { opacity: 0; transform: translateX(-6px); } to { opacity: 1; transform: none; } }
+  .tc .ic { width: 18px; height: 18px; border-radius: 99px; flex-shrink: 0; display: grid; place-items: center;
+    font-size: 11px; font-weight: 800; margin-top: 1px; }
+  .tc.pass .ic { background: rgba(52,211,153,.18); color: var(--good); }
+  .tc.fail .ic { background: rgba(251,113,133,.18); color: var(--bad); }
+  .tc .nm { font-size: 13px; font-weight: 600; }
+  .tc .dt { font-size: 11.5px; color: var(--txt-3); font-family: var(--mono); margin-top: 2px; }
+  .tc .dt b { color: var(--bad); font-weight: 600; }
+  .run-err { font-family: var(--mono); font-size: 12px; color: var(--bad); white-space: pre-wrap;
+    background: rgba(251,113,133,.07); border: 1px solid rgba(251,113,133,.25); border-radius: 10px; padding: 12px; }
+  .run-note { font-size: 12.5px; color: var(--txt-2); line-height: 1.5; }
+
+  /* Lesson overlay */
+  #lesson { position: fixed; inset: 0; z-index: 60; display: none; align-items: center; justify-content: center;
+    background: rgba(5,5,8,.74); backdrop-filter: blur(10px); padding: 24px; }
+  #lesson.show { display: flex; animation: fade .3s ease; }
+  .lesson-card { width: min(720px, 96vw); max-height: 88vh; display: flex; flex-direction: column;
+    background: linear-gradient(180deg, var(--bg-2), var(--bg)); border: 1px solid var(--line-2);
+    border-radius: 22px; padding: 0; overflow: hidden; box-shadow: 0 40px 120px -30px var(--accent-glow);
+    animation: pop .4s cubic-bezier(.2,1.2,.3,1) both; }
+  .lsn-body { overflow-y: auto; padding: 28px 30px 8px; flex: 1; min-height: 0; }
+  .lsn-title { font-size: 22px; font-weight: 800; letter-spacing: -.02em; margin-bottom: 4px; }
+  .lsn-sub { color: var(--txt-3); font-size: 12.5px; margin-bottom: 20px; }
+  .lsn-h { font-size: 11px; text-transform: uppercase; letter-spacing: .12em; color: var(--accent-2);
+    font-weight: 700; margin: 20px 0 9px; }
+  .lsn-concept { font-size: 15px; line-height: 1.65; color: var(--txt); }
+  .lsn-li { display: flex; gap: 10px; font-size: 13.5px; color: var(--txt-2); line-height: 1.55; margin-bottom: 8px; }
+  .lsn-li::before { content: "▸"; color: var(--accent); flex-shrink: 0; }
+  .lsn-li.num { counter-increment: step; }
+  .lsn-li.num::before { content: counter(step); width: 20px; height: 20px; flex-shrink: 0; border-radius: 6px;
+    background: linear-gradient(120deg, var(--accent), var(--accent-2)); color: #fff; font-size: 11px; font-weight: 700;
+    display: grid; place-items: center; }
+  .lsn-steps { counter-reset: step; }
+  .lsn-li.bad::before { content: "✕"; color: var(--bad); }
+  .lsn-pre { background: #08080d; border: 1px solid var(--line); border-radius: 12px; padding: 15px 16px;
+    overflow-x: auto; font-family: var(--mono); font-size: 12.5px; line-height: 1.7; color: #d8d8e2; white-space: pre; margin-top: 4px; }
+  .lsn-terms { display: flex; flex-wrap: wrap; gap: 6px; }
+  .lsn-foot { display: flex; gap: 10px; flex-shrink: 0; padding: 16px 30px;
+    border-top: 1px solid var(--line); background: var(--bg-2); }
+
+  /* Toast */
+  #toast { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--bg-2); border: 1px solid var(--line-2); border-radius: 12px; padding: 12px 18px;
+    font-size: 13px; font-weight: 500; opacity: 0; transition: all .35s; z-index: 70; box-shadow: 0 20px 50px -20px #000; }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  @media (max-width: 1080px) {
+    .grid { grid-template-columns: 1fr; grid-auto-rows: min-content; }
+    .col { max-height: none; }
+    body { overflow: auto; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ONBOARDING -->
+<div id="onboard">
+  <div class="mark">DevAscent</div>
+  <div class="hero">Become the engineer<br/>you're <span class="grad">scared</span> to be.</div>
+  <div class="sub">Real production take-homes. An AI that grades you like a staff engineer, finds your weak spots, and never lets you coast. It only gets harder.</div>
+  <div class="start-row">
+    <input id="handle" class="field" placeholder="pick a handle…" autocomplete="off" spellcheck="false" />
+    <button id="startBtn" class="btn">Start climbing →</button>
+  </div>
+  <div class="feats">
+    <span>⚡ <b>DeepSeek</b> grading</span>
+    <span>🎯 <b>Adaptive</b> difficulty</span>
+    <span>📈 <b>Spaced-repetition</b> coach</span>
+    <span>🔥 <b>Go-Harder</b> escalation</span>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="topbar">
+    <div class="logo">Dev<span class="dot">Ascent</span></div>
+    <span id="levelBadge" class="lvl-badge">◆ Baseline</span>
+    <div class="stat">
+      <svg class="ring" id="masteryRing" viewBox="0 0 36 36"></svg>
+      <div class="stat-meta"><div class="k">Mastery</div><div class="v" id="masteryVal">—</div></div>
+    </div>
+    <div class="spacer"></div>
+    <div class="xpwrap">
+      <div class="xptop"><span id="xpLabel">Lv 1</span><span id="xpNext">0 / 100 XP</span></div>
+      <div class="xpbar"><i id="xpFill"></i></div>
+    </div>
+    <span class="pill"><span class="flame">🔥</span><span id="streakVal">0</span></span>
+    <button class="btn ghost" id="resetBtn" title="New run" style="height:34px;padding:0 13px;font-size:12px;">↻</button>
+  </div>
+
+  <div class="grid">
+    <!-- LEFT: challenge -->
+    <div class="col">
+      <div class="eyebrow">The Challenge</div>
+      <div class="card glow" id="challengeCard"><div class="empty">Loading challenge…</div></div>
+      <div class="eyebrow">Scoring rubric</div>
+      <div id="rubricBox"></div>
+      <div class="eyebrow" id="hintsLabel" style="display:none;">Hints</div>
+      <div id="hintsBox"></div>
+    </div>
+
+    <!-- CENTER: editor -->
+    <div class="col mid">
+      <div class="ed-head">
+        <div class="dots"><i style="background:#fb7185"></i><i style="background:#fbbf24"></i><i style="background:#34d399"></i></div>
+        <span class="meta" style="font-family:var(--mono);font-size:12px;color:var(--txt-3)">solution</span>
+        <div class="spacer" style="flex:1"></div>
+        <select id="lang">
+          <option value="javascript" selected>JavaScript</option>
+          <option value="typescript">TypeScript</option>
+          <option value="python">Python</option>
+          <option value="go">Go</option>
+          <option value="rust">Rust</option>
+          <option value="java">Java</option>
+        </select>
+      </div>
+      <textarea id="code" placeholder="// Write your solution here.&#10;// Hit ▶ Run tests to execute it live against the test cases.&#10;// Then Submit for an AI code review. Score 85+ and it escalates."></textarea>
+      <div id="runPanel"></div>
+      <div class="ed-foot">
+        <span class="meta" id="locMeta">0 lines</span>
+        <div class="spacer"></div>
+        <button class="btn ghost" id="learnBtn">📖 Learn it first</button>
+        <button class="btn ghost" id="runBtn">▶ Run tests</button>
+        <button class="btn ghost" id="nextBtn" style="display:none;">Next challenge →</button>
+        <button class="btn" id="submitBtn">Submit for grading</button>
+      </div>
+    </div>
+
+    <!-- RIGHT: insights -->
+    <div class="col">
+      <div class="eyebrow">Skill matrix</div>
+      <div class="card">
+        <div class="radar-wrap"><svg id="radar" width="230" height="190" viewBox="0 0 230 190"></svg></div>
+        <div id="skillBars"></div>
+      </div>
+      <div class="eyebrow">Your coach</div>
+      <div class="card" id="coachCard"><div class="empty">Submit your first solution to calibrate your skill matrix.</div></div>
+      <div class="eyebrow">Practice next</div>
+      <div id="curriculumBox"><div class="empty">Your spaced-repetition plan appears here.</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- SCORE REVEAL -->
+<div id="reveal"><div class="reveal-card" id="revealCard"></div></div>
+<!-- LESSON -->
+<div id="lesson"><div class="lesson-card" id="lessonCard"></div></div>
+<div id="toast"></div>
+
+<script>
+const API = '';
+const LEVEL_LABEL = {BASELINE:'Baseline',SYSTEM_DESIGNER:'System Designer',TOP_1_PERCENT:'Top 1%',ARCHITECT:'Architect',DISTINGUISHED:'Distinguished'};
+const S = { session:null, user:null, challenge:null, xp:0, streak:0 };
+const STORE_KEY = 'devascent.v1';
+function save(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify({user:S.user,session:S.session,challenge:S.challenge,xp:S.xp,streak:S.streak})); }catch(e){} }
+function load(){ try{ return JSON.parse(localStorage.getItem(STORE_KEY)||'null'); }catch(e){ return null; } }
+function clearSave(){ try{ localStorage.removeItem(STORE_KEY); }catch(e){} }
+
+const $ = s => document.querySelector(s);
+const col = v => v>=75?'var(--good)':v>=50?'var(--mid)':'var(--bad)';
+const esc = s => (s||'').replace(/[&<>]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+
+function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2600); }
+
+function ring(el, pct){
+  const r=15.9, c=2*Math.PI*r;
+  el.innerHTML = `
+    <circle cx="18" cy="18" r="${r}" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="3.4"/>
+    <circle cx="18" cy="18" r="${r}" fill="none" stroke="url(#g)" stroke-width="3.4" stroke-linecap="round"
+      stroke-dasharray="${c}" stroke-dashoffset="${c*(1-pct/100)}" transform="rotate(-90 18 18)"
+      style="transition:stroke-dashoffset 1s cubic-bezier(.2,.8,.2,1)"/>
+    <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7c6cff"/><stop offset="1" stop-color="#b06cff"/></linearGradient></defs>`;
+}
+
+function radar(skills){
+  const el=$('#radar'); const entries=Object.entries(skills).slice(0,7);
+  const cx=115, cy=92, R=72;
+  if(entries.length<3){ el.innerHTML=`<text x="${cx}" y="${cy}" text-anchor="middle" fill="var(--txt-3)" font-size="11">need ≥3 skills</text>`; return; }
+  const n=entries.length, ang=i=>(-Math.PI/2)+(2*Math.PI*i/n);
+  let grid='';
+  [0.25,0.5,0.75,1].forEach(f=>{
+    let p=entries.map((_,i)=>`${cx+Math.cos(ang(i))*R*f},${cy+Math.sin(ang(i))*R*f}`).join(' ');
+    grid+=`<polygon points="${p}" fill="none" stroke="rgba(255,255,255,.06)"/>`;
+  });
+  let axes='', labels='';
+  entries.forEach(([nm],i)=>{
+    const x=cx+Math.cos(ang(i))*R, y=cy+Math.sin(ang(i))*R;
+    axes+=`<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="rgba(255,255,255,.06)"/>`;
+    const lx=cx+Math.cos(ang(i))*(R+13), ly=cy+Math.sin(ang(i))*(R+13);
+    labels+=`<text x="${lx}" y="${ly}" text-anchor="middle" dominant-baseline="middle" fill="var(--txt-3)" font-size="8.5">${esc(nm.slice(0,9))}</text>`;
+  });
+  const pts=entries.map(([,v],i)=>`${cx+Math.cos(ang(i))*R*(v/100)},${cy+Math.sin(ang(i))*R*(v/100)}`).join(' ');
+  el.innerHTML=`${grid}${axes}
+    <polygon points="${pts}" fill="rgba(124,108,255,.22)" stroke="url(#rg)" stroke-width="2"/>
+    ${entries.map(([,v],i)=>`<circle cx="${cx+Math.cos(ang(i))*R*(v/100)}" cy="${cy+Math.sin(ang(i))*R*(v/100)}" r="2.6" fill="#b06cff"/>`).join('')}
+    ${labels}
+    <defs><linearGradient id="rg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7c6cff"/><stop offset="1" stop-color="#b06cff"/></linearGradient></defs>`;
+}
+
+function skillBars(skills){
+  const e=Object.entries(skills).sort((a,b)=>b[1]-a[1]);
+  $('#skillBars').innerHTML = e.length? e.map(([k,v])=>`
+    <div class="skill-row"><span class="nm">${esc(k)}</span>
+      <span class="track"><i style="width:${v}%;background:${col(v)}"></i></span>
+      <span class="sc">${Math.round(v)}</span></div>`).join('')
+    : '<div class="empty" style="padding:8px">No data yet</div>';
+}
+
+function levelFromXP(xp){ return Math.floor(xp/100)+1; }
+function applyXP(gain){
+  const before=levelFromXP(S.xp); S.xp+=gain; const after=levelFromXP(S.xp);
+  const inLvl=S.xp%100;
+  $('#xpFill').style.width=inLvl+'%';
+  $('#xpLabel').textContent='Lv '+after;
+  $('#xpNext').textContent=inLvl+' / 100 XP';
+  if(after>before){ setTimeout(()=>toast('🎉 Level up — you reached Lv '+after+'!'),300); }
+}
+
+function renderChallenge(c){
+  S.challenge=c;
+  if(!c){ $('#challengeCard').innerHTML='<div class="empty">No challenge available.</div>'; return; }
+  const diff=c.difficulty?`<span class="chip diff">${esc(c.difficulty)}</span>`:'';
+  const lvl=c.target_level?`<span class="chip">→ ${esc(LEVEL_LABEL[c.target_level]||c.target_level)}</span>`:'';
+  const sk=(c.target_skills||[]).map(s=>`<span class="chip">${esc(s)}</span>`).join('');
+  $('#challengeCard').innerHTML=`
+    <div class="ch-title">${esc(c.title||'Challenge')}</div>
+    <div class="chips">${diff}${lvl}${sk}</div>
+    <div class="ch-desc">${esc(c.description||'')}</div>`;
+  const rb=c.rubric||{};
+  $('#rubricBox').innerHTML=Object.entries(rb).map(([k,m])=>`
+    <div class="rubric-item"><div><div class="rn">${esc(k)}</div><div class="rd">${esc(m.description||'')}</div></div>
+      <div class="rw">${m.weight||0}%</div></div>`).join('') || '';
+  const hints=c.hints||[];
+  $('#hintsLabel').style.display=hints.length?'block':'none';
+  $('#hintsBox').innerHTML=hints.map(h=>`<div class="hint">${esc(h)}</div>`).join('');
+  const rp=document.getElementById('runPanel'); if(rp){ rp.classList.remove('open'); rp.innerHTML=''; }
+}
+
+function setLevel(lvl){ $('#levelBadge').textContent='◆ '+(LEVEL_LABEL[lvl]||lvl); }
+
+async function api(path, opts){ const r=await fetch(API+path, opts); if(!r.ok) throw new Error(path+' '+r.status); return r.json(); }
+
+function enterApp(){ $('#onboard').classList.add('hide'); $('#app').classList.add('show'); }
+
+async function start(userOverride){
+  const h=(userOverride||$('#handle').value.trim()||'climber');
+  S.user=h;
+  $('#startBtn').disabled=true; $('#startBtn').innerHTML='<span class="spin"></span> Starting…';
+  try{
+    const d=await api('/api/assessment/start',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:h})});
+    S.session=d.session_id;
+    setLevel(d.current_level); renderChallenge(d.challenge_data);
+    ring($('#masteryRing'),0); $('#masteryVal').textContent='—';
+    radar(d.skills_matrix||{}); skillBars(d.skills_matrix||{});
+    applyXP(0);
+    await loadCoach();
+    enterApp(); save();
+    setTimeout(()=>$('#code').focus(),400);
+  }catch(e){ toast('Could not start: '+e.message); $('#startBtn').disabled=false; $('#startBtn').textContent='Start climbing →'; }
+}
+
+// Restore a prior session across refresh. Falls back to a fresh session for
+// the same handle if the in-memory server session is gone (e.g. restart).
+async function boot(){
+  const prev=load();
+  if(prev && prev.user){ $('#handle').value=prev.user; }
+  if(!prev || !prev.session){ return; }
+  S.user=prev.user; S.session=prev.session; S.xp=prev.xp||0; S.streak=prev.streak||0;
+  try{
+    const st=await api(`/api/assessment/${prev.session}/state`);
+    // Session alive — restore in place.
+    setLevel(st.current_level);
+    renderChallenge(prev.challenge);
+    const skills=st.skills_matrix||{}; radar(skills); skillBars(skills);
+    const vals=Object.values(skills); const m=vals.length?Math.round(vals.reduce((a,b)=>a+b,0)/vals.length):0;
+    ring($('#masteryRing'),m); $('#masteryVal').textContent=vals.length?m:'—';
+    $('#streakVal').textContent=S.streak; applyXP(0);
+    await loadCoach();
+    enterApp();
+    toast('Welcome back, '+S.user+' — session restored.');
+  }catch(e){
+    // Dead session: re-start fresh (durable coach history is kept server-side).
+    toast('Resuming as '+prev.user+'…');
+    await start(prev.user);
+  }
+}
+
+async function submit(){
+  const code=$('#code').value.trim();
+  if(code.length<10){ toast('Write a real solution first 🙂'); return; }
+  const btn=$('#submitBtn'); btn.disabled=true; btn.innerHTML='<span class="spin"></span> Grading…';
+  showReveal();
+  try{
+    await api(`/api/assessment/${S.session}/submit`,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({challenge_id:S.challenge?.title||'challenge',code,language:$('#lang').value})});
+    const st=await api(`/api/assessment/${S.session}/state`);
+    const hist=st.evaluation_history||[]; const last=hist[hist.length-1]||{};
+    S.streak++; $('#streakVal').textContent=S.streak;
+    setLevel(st.current_level);
+    const skills=st.skills_matrix||{}; radar(skills); skillBars(skills);
+    const vals=Object.values(skills); const mastery=vals.length?Math.round(vals.reduce((a,b)=>a+b,0)/vals.length):0;
+    ring($('#masteryRing'),mastery); $('#masteryVal').textContent=mastery;
+    applyXP(Math.round((last.score||0)));
+    revealScore(last, st.next_action);
+    await loadCoach();
+    $('#nextBtn').style.display='inline-flex';
+    save();
+  }catch(e){ hideReveal(); toast('Grading failed: '+e.message); }
+  finally{ btn.disabled=false; btn.textContent='Submit for grading'; }
+}
+
+async function nextChallenge(){
+  try{
+    const d=await api(`/api/assessment/${S.session}/next`);
+    if(d.challenge_data||d.challenge){ renderChallenge(d.challenge_data||d.challenge); }
+    if(d.current_level) setLevel(d.current_level);
+    $('#code').value=''; $('#locMeta').textContent='0 lines'; $('#nextBtn').style.display='none';
+    $('#code').focus(); save(); toast('New challenge loaded. Go.');
+  }catch(e){ toast('Could not load next: '+e.message); }
+}
+
+async function loadCoach(){
+  try{
+    const [p,c]=await Promise.all([api(`/api/coach/progress/${S.user}`),api(`/api/coach/curriculum/${S.user}`)]);
+    const mom=p.momentum||0;
+    const momCls=mom>0.5?'up':mom<-0.5?'down':'flat';
+    const momTxt=mom>0.5?'▲ rising':mom<-0.5?'▼ slipping':'● steady';
+    const strong=(p.strongest||[]).slice(0,3).map(([k,v])=>`<span class="chip">${esc(k)} ${Math.round(v)}</span>`).join('');
+    const weak=(p.weakest||[]).slice(0,3).map(([k,v])=>`<span class="chip" style="border-color:rgba(251,113,133,.3);color:#ffc4cd">${esc(k)} ${Math.round(v)}</span>`).join('');
+    $('#coachCard').innerHTML=`
+      <div class="coach-line">${esc(p.summary||'')}</div>
+      <div style="margin:13px 0 4px"><span class="mom ${momCls}">${momTxt}</span></div>
+      ${strong?`<div class="eyebrow" style="margin:14px 0 7px">Strengths</div><div class="chips">${strong}</div>`:''}
+      ${weak?`<div class="eyebrow" style="margin:12px 0 7px">Weak spots</div><div class="chips">${weak}</div>`:''}
+      ${(p.milestones||[]).length?`<div class="eyebrow" style="margin:12px 0 6px">Milestones</div>${p.milestones.map(m=>`<div class="hint">${esc(m)}</div>`).join('')}`:''}`;
+    const items=c.items||[];
+    $('#curriculumBox').innerHTML=items.length? items.map((it,i)=>`
+      <div class="nextup"><div class="idx">${i+1}</div>
+        <div><div class="nu-sk">${esc(it.skill)} ${it.due?'<span class="due">due</span>':''}</div>
+        <div class="nu-rs">${esc(it.recommended_action||it.reason||'')}</div></div></div>`).join('')
+      : '<div class="empty">All caught up. Keep climbing.</div>';
+  }catch(e){ /* coach optional */ }
+}
+
+function showReveal(){ $('#revealCard').innerHTML='<div style="padding:30px 0"><div class="spin" style="margin:0 auto 16px;width:30px;height:30px"></div><div style="color:var(--txt-2)">DeepSeek is grading your code…</div></div>'; $('#reveal').classList.add('show'); }
+function hideReveal(){ $('#reveal').classList.remove('show'); }
+function revealScore(last, action){
+  const sc=Math.round(last.score||0);
+  const c=col(sc);
+  const verdict=sc>=85?'EXCELLENT':sc>=70?'STRONG':sc>=40?'NEEDS WORK':'FOUNDATIONS';
+  const esc85 = action==='escalate';
+  const adv = action==='advance_level';
+  const tags=[...(last.rubric_breakdown?Object.entries(last.rubric_breakdown):[])].map(([k,v])=>`<span class="chip">${esc(k)} ${Math.round(v)}</span>`).join('');
+  $('#revealCard').innerHTML=`
+    <div class="big-score" style="color:${c}">${sc}<small>/100</small></div>
+    <div class="verdict" style="color:${c}">${verdict}</div>
+    ${esc85?'<div class="escalate-note" style="margin-top:14px">⚡ Go Harder — production chaos incoming on your next challenge</div>':''}
+    ${adv?'<div class="escalate-note" style="margin-top:14px">⬆ Level up — you advanced a tier</div>':''}
+    <div class="reveal-fb">${esc(last.ai_feedback||'')}</div>
+    <div class="rv-tags">${tags}</div>
+    <button class="btn" id="closeReveal" style="width:100%;justify-content:center">${esc85||adv?'Bring it on →':'Keep going'}</button>`;
+  $('#reveal').classList.add('show');
+  $('#closeReveal').onclick=()=>{ hideReveal(); if(esc85||adv) nextChallenge(); };
+}
+
+// ---- light TS → JS strip so live-run works on TS submissions (best-effort;
+//      the authoritative grade is DeepSeek, which reads TS natively) ----
+function stripTypes(src){
+  try{
+    return src
+      .replace(/\binterface\s+\w+\s*\{[\s\S]*?\n\}/g,'')
+      .replace(/\btype\s+\w+\s*=[\s\S]*?;/g,'')
+      .replace(/([)\w\]])\s*:\s*[A-Za-z0-9_$.\[\]]+(<[^>]*>)?(\[\])?(?=\s*[,)=])/g,'$1')
+      .replace(/\)\s*:\s*[A-Za-z0-9_$.\[\]]+(<[^>]*>)?(?=\s*[\{=])/g,')')
+      .replace(/\sas\s+[A-Za-z0-9_$.\[\]<>]+/g,'');
+  }catch(e){ return src; }
+}
+
+// ---- in-browser sandboxed execution against the challenge test harness ----
+function runTests(){
+  const panel=$('#runPanel'); panel.classList.add('open');
+  const harness=S.challenge && S.challenge.test_harness;
+  if(!harness){
+    panel.innerHTML='<div class="run-inner"><div class="run-note">No automated tests for this challenge yet. Write your solution and <b>Submit for grading</b> — DeepSeek reviews quality, edge cases & production-readiness.</div></div>';
+    return;
+  }
+  let code=$('#code').value;
+  if(code.trim().length<5){ panel.innerHTML='<div class="run-inner"><div class="run-note">Write some code first 🙂</div></div>'; return; }
+  if($('#lang').value==='typescript') code=stripTypes(code);
+  panel.innerHTML='<div class="run-inner"><div class="run-note"><span class="spin" style="display:inline-block;vertical-align:-3px;margin-right:8px"></span>Running your code in a sandbox…</div></div>';
+
+  const workerSrc = `self.onmessage = async (e)=>{
+    const {code, harness}=e.data;
+    const results=[];
+    const sleep=ms=>new Promise(r=>setTimeout(r, Math.min(ms,500)));
+    const check=(name,pass,detail,want)=>results.push({name,pass:!!pass,detail:String(detail==null?'':detail),want:String(want==null?'':want)});
+    try{
+      const runner=new Function('check','sleep','"use strict";\\nreturn (async()=>{\\n'+code+'\\n;\\n'+harness+'\\n})();');
+      await runner(check, sleep);
+      self.postMessage({ok:true, results});
+    }catch(err){ self.postMessage({ok:false, error:(err&&err.stack)||String(err), results}); }
+  };`;
+  const url=URL.createObjectURL(new Blob([workerSrc],{type:'application/javascript'}));
+  const w=new Worker(url);
+  const t=setTimeout(()=>{ w.terminate(); renderRun({ok:false,error:'Timed out (6s). Possible infinite loop or a promise that never resolves.',results:[]}); }, 6000);
+  w.onmessage=(e)=>{ clearTimeout(t); w.terminate(); URL.revokeObjectURL(url); renderRun(e.data); };
+  w.onerror=(e)=>{ clearTimeout(t); w.terminate(); renderRun({ok:false,error:(e.message||'Execution error')+'. If you wrote TypeScript-only syntax, switch the language to JavaScript to run live tests.',results:[]}); };
+  w.postMessage({code, harness});
+}
+
+function renderRun(d){
+  const panel=$('#runPanel'); panel.classList.add('open');
+  const res=d.results||[];
+  const passed=res.filter(r=>r.pass).length, total=res.length;
+  const allPass=d.ok && total>0 && passed===total;
+  let html='<div class="run-inner">';
+  if(total){
+    html+=`<div class="run-summary"><span class="big">${allPass?'✅ All tests passed':passed+' / '+total+' passing'}</span>
+      <span class="pf ${allPass?'ok':'no'}">${passed}/${total}</span>
+      <span class="run-bar"><i style="width:${total?Math.round(passed/total*100):0}%"></i></span></div>`;
+    html+=res.map(r=>`<div class="tc ${r.pass?'pass':'fail'}"><span class="ic">${r.pass?'✓':'✕'}</span>
+      <div><div class="nm">${esc(r.name)}</div>${(!r.pass&&(r.detail||r.want))?`<div class="dt">got <b>${esc(r.detail)}</b>${r.want?' · want '+esc(r.want):''}</div>`:''}</div></div>`).join('');
+  }
+  if(d.error){ html+=`<div class="run-err">${esc(d.error)}</div>`; }
+  if(!total && !d.error){ html+='<div class="run-note">No assertions ran — check your function name matches the challenge.</div>'; }
+  if(allPass){ html+='<div class="run-note" style="margin-top:10px;color:var(--good)">Tests green — now <b>Submit for grading</b> for an AI review of quality & edge cases.</div>'; }
+  html+='</div>';
+  panel.innerHTML=html;
+}
+
+async function learn(){
+  const btn=$('#learnBtn'); const orig=btn.innerHTML;
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span> Teaching…';
+  $('#lessonCard').innerHTML='<div style="padding:36px 0;text-align:center"><div class="spin" style="margin:0 auto 16px;width:28px;height:28px"></div><div style="color:var(--txt-2)">Your mentor is preparing the lesson…</div></div>';
+  $('#lesson').classList.add('show');
+  try{
+    const path = S.session ? `/api/assessment/${S.session}/learn` : `/api/assessment/preview/learn`;
+    const d=await api(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({language:$('#lang').value})});
+    renderLesson(d.lesson||{});
+  }catch(e){ $('#lesson').classList.remove('show'); toast('Lesson failed: '+e.message); }
+  finally{ btn.disabled=false; btn.innerHTML=orig; }
+}
+function renderLesson(L){
+  const li=(arr,cls='')=>(arr||[]).map(x=>`<div class="lsn-li ${cls}">${esc(x)}</div>`).join('');
+  const terms=(L.study_terms||[]).map(t=>`<span class="chip">${esc(t)}</span>`).join('');
+  const provider = L.provider==='deepseek' ? 'Taught live by DeepSeek' : 'Offline lesson (set DEEPSEEK_API_KEY for live tutoring)';
+  $('#lessonCard').innerHTML=`
+    <div class="lsn-body">
+      <div class="lsn-title">${esc(S.challenge?.title||'Lesson')}</div>
+      <div class="lsn-sub">${provider}</div>
+      <div class="lsn-h">The core idea</div>
+      <div class="lsn-concept">${esc(L.concept||'')}</div>
+      ${(L.key_points||[]).length?`<div class="lsn-h">What you must understand</div>${li(L.key_points)}`:''}
+      ${(L.approach_steps||[]).length?`<div class="lsn-h">How to approach it</div><div class="lsn-steps">${li(L.approach_steps,'num')}</div>`:''}
+      ${(L.common_mistakes||[]).length?`<div class="lsn-h">Traps that lose points</div>${li(L.common_mistakes,'bad')}`:''}
+      ${L.starter_code?`<div class="lsn-h">Starter scaffold</div><div class="lsn-pre">${esc(L.starter_code)}</div>`:''}
+      ${terms?`<div class="lsn-h">Go deeper</div><div class="lsn-terms">${terms}</div>`:''}
+    </div>
+    <div class="lsn-foot">
+      ${L.starter_code?'<button class="btn" id="useScaffold">Use this scaffold →</button>':''}
+      <button class="btn ghost" id="closeLesson">Close & try it</button>
+    </div>`;
+  const close=()=>$('#lesson').classList.remove('show');
+  $('#closeLesson').onclick=close;
+  const us=$('#useScaffold'); if(us) us.onclick=()=>{ $('#code').value=L.starter_code; const n=L.starter_code.split('\n').length; $('#locMeta').textContent=n+' lines'; close(); $('#code').focus(); toast('Scaffold loaded — fill in the TODOs.'); };
+}
+
+$('#startBtn').onclick=start;
+$('#learnBtn').onclick=learn;
+$('#runBtn').onclick=runTests;
+$('#handle').addEventListener('keydown',e=>{ if(e.key==='Enter') start(); });
+$('#submitBtn').onclick=submit;
+$('#nextBtn').onclick=nextChallenge;
+$('#resetBtn').onclick=()=>{ clearSave(); location.reload(); };
+$('#code').addEventListener('input',e=>{ const n=e.target.value.split('\n').length; $('#locMeta').textContent=n+(n===1?' line':' lines'); });
+$('#code').addEventListener('keydown',e=>{ if(e.key==='Tab'){ e.preventDefault(); const t=e.target,s=t.selectionStart; t.value=t.value.slice(0,s)+'  '+t.value.slice(t.selectionEnd); t.selectionStart=t.selectionEnd=s+2; }
+  if((e.metaKey||e.ctrlKey)&&e.key==='Enter'){ submit(); } });
+ring($('#masteryRing'),0);
+boot();
+</script>
+</body>
+</html>

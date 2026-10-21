@@ -198,3 +198,85 @@ f7a87ea P1-02: rename hermes → devascent across codebase
 86b63f5 P1-01: strip unused platforms, desktop, TUI, optional skills
 211ba9c feat(agent): one-shot LLM helper (upstream Hermes)
 ```
+
+---
+
+## Phase 10: Skill Coach — un-silo the assessment engine (NEW)
+
+> **Why:** the assessment FSM wrote only to its own LangGraph/Postgres
+> checkpoint and never fed back into a skill-building loop. Hermes ships
+> cross-session memory + a self-improving skills system — none of it was
+> wired to the assessment. This phase closes that gap: every evaluation now
+> compounds into a durable, growing personal curriculum.
+
+| Ticket | Description | Status |
+|--------|-------------|--------|
+| P10-01 | `LearningJournal` — durable per-user JSONL of every evaluation | ✅ |
+| P10-02 | Curriculum + spaced-repetition engine (SM-2 inspired, pure) | ✅ |
+| P10-03 | `CoachReport` synthesis (mastery, momentum, strongest/weakest) | ✅ |
+| P10-04 | Memory bridge — writes hermes-format progress note for the agent | ✅ |
+| P10-05 | `CoachProgress` LangGraph node wired after `update_skills` | ✅ |
+| P10-06 | Coach API: `/api/coach/progress|curriculum|history/{user_id}` | ✅ |
+| P10-07 | Cron-ready daily practice reminder (`python -m devascent.coach.reminder`) | ✅ |
+| P10-08 | Unit tests (11, infra-free — no DB/Redis/langgraph) | ✅ |
+
+**Brought back from the strip (P1-01):**
+- The **self-improving skills + memory loop** is reconnected via the memory
+  bridge — the agent can now coach with full skill-history awareness.
+- The **cron** subsystem (kept, but unused) now has a real job: daily
+  spaced-repetition practice nudges toward the user's weakest skills.
+
+**Run the new tests:**
+```
+PYTHONPATH=. .venv/bin/python tests/devascent/test_coach.py
+```
+
+---
+
+## Phase 11: DeepSeek + UI redesign (NEW)
+
+| Ticket | Description | Status |
+|--------|-------------|--------|
+| P11-01 | DeepSeek evaluator (`devascent/llm/deepseek.py`, stdlib, OpenAI-compatible) | ✅ |
+| P11-02 | Wire DeepSeek + coach journal into the demo API submit path | ✅ |
+| P11-03 | First-observation seeding fix (no decay-vs-zero understatement) | ✅ |
+| P11-04 | Full UI redesign — gamified, clutter-free single-page app (`web/public/assess.html`) | ✅ |
+| P11-05 | Run + verify end-to-end (uvicorn, real DeepSeek grading) | ✅ |
+
+**UI:** Apple-dark premium aesthetic, onboarding hero, XP/level/streak, animated
+mastery ring + skill radar, live coach panel, spaced-repetition "practice next",
+score-reveal with Go-Harder escalation. Vanilla JS, zero build, served by FastAPI.
+
+**Run:**
+```
+DEEPSEEK_API_KEY=... PYTHONPATH=. .venv/bin/python -m uvicorn devascent.api.app:app --port 8000
+# open http://127.0.0.1:8000
+```
+
+---
+
+## Phase 13: Pivot — "Path to Top 1%" interactive learning studio (NEW)
+
+> Rethink: the assessment-only app felt like being *tested*. Pivoted to a
+> career-ladder engine: current role → AI roadmap → narrated/animated/playable
+> lessons → interview/test to prove mastery. Apple-level, Claude warm-light theme.
+
+| Ticket | Description | Status |
+|--------|-------------|--------|
+| P13-01 | DeepSeek generators: roadmap, lesson (narration+mermaid+playable widget), interview Qs, answer grading | ✅ |
+| P13-02 | Routes: `/api/roadmap`, `/api/learn/lesson`, `/api/interview/{start,grade}`, `/api/tts` (+offline mocks) | ✅ |
+| P13-03 | React SPA (separate Vite entry `devascent.html`): Onboard → Roadmap (React Flow graph) | ✅ |
+| P13-04 | Studio (Learn): narrated lesson (Web Speech + sentence highlight), Mermaid concept map, sandboxed playable widget | ✅ |
+| P13-05 | Prove (Interview): question flow + DeepSeek grading → journal/coach update → roadmap re-orders | ✅ |
+| P13-06 | Local TTS: Kokoro-82M endpoint + `scripts/setup_tts.sh` + browser fallback | ✅ |
+| P13-07 | Warm Apple-light design system (Claude-style, clay accent), motion, persistence | ✅ |
+
+**Researched (LLM interactive-learning prior art):** LangChain LLM Graph Transformer,
+ai-knowledge-graph, AnimatedLLM, Interactive Sketchpad/SPROUT, Manim generators
+(manim-generator, Math-To-Manim). Chose client-side interactive (graphs/Mermaid/iframe
+widgets) over Manim video render for instant interactivity. TTS: Kokoro-82M (CPU, 327MB)
+local, Web Speech default.
+
+**Run:** `PYTHONPATH=. .venv/bin/python -m uvicorn devascent.api.app:app --port 8000` → http://127.0.0.1:8000
+**Rebuild UI after edits:** `cd web && npx vite build`
+**Premium voice (optional):** `scripts/setup_tts.sh`

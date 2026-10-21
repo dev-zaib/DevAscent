@@ -15,8 +15,15 @@ def update_skills_matrix(state: DevAscentState) -> dict:
     skills = dict(state.get("skills_matrix", {}))
     rubric_scores = state.get("rubric_scores", {})
 
+    deltas: dict[str, float] = {}
     for skill, score in rubric_scores.items():
         old = skills.get(skill, 0.0)
-        skills[skill] = round(old * DECAY_FACTOR + score * NEW_WEIGHT, 2)
+        if skill in skills:
+            new = round(old * DECAY_FACTOR + score * NEW_WEIGHT, 2)
+        else:
+            new = round(float(score), 2)  # first observation seeds at full value
+        skills[skill] = new
+        deltas[skill] = round(new - old, 2)
 
-    return {"skills_matrix": skills}
+    # skill_deltas feed the coach node's journal entry (growth over time).
+    return {"skills_matrix": skills, "skill_deltas": deltas}

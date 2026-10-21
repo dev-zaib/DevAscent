@@ -1,0 +1,82 @@
+Feature 1: The Stateful Skill & Assessment Graph (LangGraph Backend)
+User Story
+As a developer using the platform, I want my test progression to be managed by an intelligent state machine so that my test state, current engineering level, and score matrix are updated continuously without losing context or skipping essential foundational concepts.
+
+Technical Acceptance Criteria
+State Definition: The LangGraph state must track a DevAscentState TypeScript interface containing:
+
+userId: string
+
+currentLevel: 'BASELINE' | 'SYSTEM_DESIGNER' | 'TOP_1_PERCENT'
+
+skillsMatrix: Record<string, number> (e.g., {'async_flows': 85, 'virtualization': 40})
+
+activeChallengeId: string
+
+evaluationHistory: Array of past execution logs.
+
+Graph Nodes: Implement at least three critical nodes:
+
+EvaluateSubmission: Processes the user's uploaded code against a defined performance rubric.
+
+UpdateSkillsMatrix: Computes a new weighted score based on execution performance.
+
+DetermineNextStep: A conditional routing node that decides whether to advance the user, keep them at the current level with a new variant, or demote them to fix fundamentals.
+
+Feature 2: Vector-Driven Technical Assessment (RAG Pipeline)
+User Story
+As a candidate aiming for elite engineering roles, I want the assessment platform to serve me production-grade real-world scenarios instead of generic algorithms, drawing from a local repository of real tech-company take-home challenges.
+
+Technical Acceptance Criteria
+Database Vector Layer: Utilize pgvector inside the PostgreSQL database to store challenge documents.
+
+Embedding Model: Use text-embedding models to vectorize both the challenge data and the user's historical weak spots.
+
+Retrieval Strategy: When the LangGraph state machine hits the generateChallenge node, it must execute a similarity search looking for challenges where the target skills match the user’s lowest-rated variables in skillsMatrix.
+
+Seed Data: Pre-populate the vector database with at least 15 high-fidelity enterprise scenarios covering memory leak optimization, database connection pooling issues, rate-limiting, and large-scale web scraping architectures.
+
+Feature 3: The "Go Harder" Escalation Loop (Adaptive Engine)
+User Story
+As an engineer progressing past baseline tasks, I want the system to dynamically inject unexpected, brutal production constraints into my active workspace so that I can practice refactoring under real stress.
+
+Technical Acceptance Criteria
+Trigger Mechanism: If EvaluateSubmission returns a score above 85% on a baseline task, the graph routes to an EscalateChallenge node instead of completing the cycle.
+
+Mutation Prompting: The AI must modify the active prompt by appending structural engineering chaos.
+
+Example Level 1 Passed: "Your TypeScript scraper successfully parses data."
+
+AI Injection Level 2: "A viral traffic spike just hit your node. Rewrite this exact logic using Redis-backed async task queues, semantic caching, and implement row virtualization data rendering rules on the UI to handle 50,000 active records seamlessly."
+
+Validation: The code evaluator must explicitly test for the newly introduced constraints in the next review cycle.
+
+Feature 4: Type-Led Minimalist Split Workspace (Stitch MCP UI)
+User Story
+As a developer obsessed with clean tooling, I want a distraction-free, ultra-fast interface with a split layout so that I can see the architecture challenge on one side and a real-time terminal evaluation stream on the other.
+
+Technical Acceptance Criteria
+Design Language: Use Google Stitch MCP to generate the UI components. Enforce an Apple-style aesthetic using Geist Sans and Inter for clean typography, large padding values, a true dark-mode palette, and zero colorful gradients.
+
+Layout Blocks:
+
+Left Panel: Challenge markdown renderer containing the functional requirements and architectural objectives.
+
+Center Panel: Code review / active submission log display.
+
+Right Panel: Live metrics dashboard tracking the active skillsMatrix using a visual radar map or sleek linear bar meters.
+
+Performance: Use window/row virtualization for rendering dense terminal logs or historical score cards to prevent UI lagging when datasets scale over 10,000 lines.
+
+Feature 5: Asynchronous Evaluation Pipeline (BullMQ & Railway Deployment)
+User Story
+As a developer deploying to production, I want code processing to occur in an asynchronous background queue so that the frontend stays highly responsive and my web servers never time out or drop requests during heavy AI calculation tasks.
+
+Technical Acceptance Criteria
+Queue Integration: Implement BullMQ with a Redis connection layer.
+
+Task Distribution: When a user submits code, the web server pushes a lightweight job to the Redis queue and instantly returns a 202 Accepted response.
+
+Worker Execution: A dedicated Railway background worker picks up the job, invokes the LangGraph state machine evaluation loop, interacts with the LLM provider, and saves the final result to PostgreSQL.
+
+Real-time Status Updates: The frontend connects to an active Server-Sent Events (SSE) or WebSocket endpoint on the server to listen for completion events, streaming the AI evaluation results text-by-text as they generate.
